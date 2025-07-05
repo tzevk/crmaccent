@@ -14,17 +14,9 @@ export default async function handler(req, res) {
         message: 'Users retrieved successfully'
       });
     } catch (error) {
-        console.log('Production mode: Fetching users from database');
-        const query = 'SELECT id, username, email, first_name, last_name, role, is_active, created_at, updated_at FROM users ORDER BY created_at DESC';
-        const users = await executeQuery(query);
-        
-        return res.status(200).json({
-          message: 'Users retrieved successfully',
-          users: users,
-          demo: false,
-          total: users.length
-        });
-      }
+      console.error('Get users error:', error);
+      return res.status(500).json({ message: 'Failed to retrieve users' });
+    }
   }
 
   if (req.method === 'POST') {
@@ -55,77 +47,47 @@ export default async function handler(req, res) {
     }
 
     try {
-      if (DEMO_MODE) {
-        console.log('Demo mode: Adding user to memory');
-        
-        // Check if username or email already exists
-        const existingUser = demoUsers.find(u => u.username === username || u.email === email);
-        if (existingUser) {
-          return res.status(409).json({ 
-            message: 'Username or email already exists' 
-          });
-        }
-
-        // Create new user
-        const newUser = {
-          id: demoUsers.length + 1,
-          username,
-          email,
-          first_name,
-          last_name,
-          role,
-          password, // In production, this should be hashed
-          is_active: 1,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-
-        demoUsers.push(newUser);
-
-        // Return user without password
-        const { password: _, ...userResponse } = newUser;
-        
-        return res.status(201).json({
-          message: 'User created successfully',
-          user: userResponse,
-          demo: true
-        });
-      } else {
-        console.log('Production mode: Adding user to database');
-        
-        // Check if username or email already exists
-        const checkQuery = 'SELECT id FROM users WHERE username = ? OR email = ?';
-        const existingUsers = await executeQuery(checkQuery, [username, email]);
-        
-        if (existingUsers.length > 0) {
-          return res.status(409).json({ 
-            message: 'Username or email already exists' 
-          });
-        }
-
-        // Insert new user (password should be hashed in production)
-        const insertQuery = `
-          INSERT INTO users (username, email, first_name, last_name, role, password, is_active, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, 1, NOW(), NOW())
-        `;
-        
-        const result = await executeQuery(insertQuery, [username, email, first_name, last_name, role, password]);
-        
-        // Get the created user
-        const getUserQuery = 'SELECT id, username, email, first_name, last_name, role, is_active, created_at, updated_at FROM users WHERE id = ?';
-        const [newUser] = await executeQuery(getUserQuery, [result.insertId]);
-        
-        return res.status(201).json({
-          message: 'User created successfully',
-          user: newUser,
-          demo: false
+      console.log('Production mode: Adding user to database');
+      
+      // Check if username or email already exists
+      const checkQuery = 'SELECT id FROM users WHERE username = ? OR email = ?';
+      const existingUsers = await executeQuery(checkQuery, [username, email]);
+      
+      if (existingUsers.length > 0) {
+        return res.status(409).json({ 
+          message: 'Username or email already exists' 
         });
       }
+
+      // Hash password
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+      // Insert new user
+      const insertQuery = `
+        INSERT INTO users (username, email, first_name, last_name, role, password, is_active, created_at, updated_at) 
+        VALUES (?, ?, ?, ?, ?, ?, 1, NOW(), NOW())
+      `;
+      
+      const result = await executeQuery(insertQuery, [
+        username, email, first_name, last_name, role, hashedPassword
+      ]);
+
+      // Get the created user (without password)
+      const getUserQuery = 'SELECT id, username, email, first_name, last_name, role, is_active, created_at, updated_at FROM users WHERE id = ?';
+      const newUsers = await executeQuery(getUserQuery, [result.insertId]);
+      const newUser = newUsers[0];
+
+      return res.status(201).json({
+        message: 'User created successfully',
+        user: newUser
+      });
+
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error('Create user error:', error);
       return res.status(500).json({ 
         message: 'Failed to create user',
-        error: DEMO_MODE ? 'Demo error' : 'Database error'
+        error: 'Database error'
       });
     }
   }

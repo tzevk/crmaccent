@@ -22,7 +22,6 @@
 Set these in Vercel Dashboard → Project Settings → Environment Variables:
 
 ```
-DEMO_MODE=false
 DB_HOST=your-database-host
 DB_PORT=3306
 DB_NAME=your-database-name
