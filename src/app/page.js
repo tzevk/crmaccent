@@ -40,20 +40,15 @@ export default function SignIn() {
       const data = await response.json();
 
       if (response.ok) {
-        const modeText = data.demo ? ' (Demo Mode)' : '';
-        setSuccess(`Sign in successful! Redirecting to dashboard...${modeText}`);
+        setSuccess(`Sign in successful! Redirecting to dashboard...`);
         setIsRedirecting(true);
         console.log('User signed in:', data.user);
-        if (data.demo) {
-          console.log('Demo mode active - using dummy credentials');
-        } else {
-          console.log('Production mode - database authentication successful');
-        }
+        console.log('Production mode - database authentication successful');
         
         // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('authMode', data.demo ? 'demo' : 'production');
+        localStorage.setItem('authMode', 'production');
         
         // Redirect to dashboard with smooth transition
         setTimeout(() => {

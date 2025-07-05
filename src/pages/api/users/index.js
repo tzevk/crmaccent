@@ -1,62 +1,19 @@
 import { executeQuery } from '../../../lib/db';
-
-// Demo mode flag
-const DEMO_MODE = process.env.DEMO_MODE === 'true';
-
-// Demo users storage (in production, this would be database)
-let demoUsers = [
-  {
-    id: 1,
-    username: 'admin',
-    email: 'admin@crmaccent.com',
-    first_name: 'Admin',
-    last_name: 'User',
-    role: 'admin',
-    password: 'password123',
-    is_active: 1,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 2,
-    username: 'manager',
-    email: 'manager@crmaccent.com',
-    first_name: 'Manager',
-    last_name: 'User',
-    role: 'manager',
-    password: 'password123',
-    is_active: 1,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 3,
-    username: 'testuser',
-    email: 'test@crmaccent.com',
-    first_name: 'Test',
-    last_name: 'User',
-    role: 'user',
-    password: 'password123',
-    is_active: 1,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }
-];
+import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     // Get all users
     try {
-      if (DEMO_MODE) {
-        console.log('Demo mode: Fetching users from memory');
-        const usersWithoutPasswords = demoUsers.map(({ password, ...user }) => user);
-        return res.status(200).json({
-          message: 'Users retrieved successfully',
-          users: usersWithoutPasswords,
-          demo: true,
-          total: usersWithoutPasswords.length
-        });
-      } else {
+      console.log('Fetching users from database');
+      const query = 'SELECT id, username, email, first_name, last_name, role, is_active, created_at, updated_at FROM users ORDER BY created_at DESC';
+      const users = await executeQuery(query);
+      
+      return res.status(200).json({
+        users: users,
+        message: 'Users retrieved successfully'
+      });
+    } catch (error) {
         console.log('Production mode: Fetching users from database');
         const query = 'SELECT id, username, email, first_name, last_name, role, is_active, created_at, updated_at FROM users ORDER BY created_at DESC';
         const users = await executeQuery(query);
@@ -68,13 +25,6 @@ export default async function handler(req, res) {
           total: users.length
         });
       }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      return res.status(500).json({ 
-        message: 'Failed to retrieve users',
-        error: DEMO_MODE ? 'Demo error' : 'Database error'
-      });
-    }
   }
 
   if (req.method === 'POST') {

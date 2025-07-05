@@ -1,8 +1,5 @@
 import { executeQuery } from '../../../lib/db';
-import { findUserByUsername } from '../../../lib/dummy-data';
-
-// Demo mode flag - set to true to use dummy data, false to use real database
-const DEMO_MODE = process.env.DEMO_MODE === 'true'; // Read from environment
+import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -16,41 +13,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    let user = null;
+    console.log('Production mode: Using database for authentication');
+    const query = 'SELECT * FROM users WHERE username = ?';
+    const users = await executeQuery(query, [username]);
 
-    if (DEMO_MODE) {
-      // Use dummy data for demo
-      console.log('Demo mode: Using dummy credentials');
-      user = findUserByUsername(username);
-      
-      if (!user) {
-        return res.status(401).json({ message: 'Invalid username or password' });
-      }
-    } else {
-      // Use real database
-      console.log('Production mode: Using database');
-      const query = 'SELECT * FROM users WHERE username = ?';
-      const users = await executeQuery(query, [username]);
-
-      if (users.length === 0) {
-        return res.status(401).json({ message: 'Invalid username or password' });
-      }
-
-      user = users[0];
+    if (users.length === 0) {
+      return res.status(401).json({ message: 'Invalid username or password' });
     }
 
-    // Compare passwords (simplified for demo)
-    let isPasswordValid = false;
-    
-    if (DEMO_MODE) {
-      // Simple plain text comparison for demo
-      isPasswordValid = password === 'password123';
-    } else {
-      // For production, you would use bcrypt here
-      // const bcrypt = require('bcryptjs');
-      // isPasswordValid = await bcrypt.compare(password, user.password);
-      isPasswordValid = password === user.password; // Plain text for now
-    }
+    const user = users[0];
+
+    // Compare passwords using bcrypt
+    const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid username or password' });
@@ -61,17 +35,11 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       message: 'Sign in successful',
-      user: userWithoutPassword,
-      demo: DEMO_MODE
+      user: userWithoutPassword
     });
 
   } catch (error) {
-    console.error('Sign in error:', error);
-    
-    if (DEMO_MODE) {
-      return res.status(500).json({ message: 'Demo authentication error' });
-    } else {
-      return res.status(500).json({ message: 'Internal server error' });
-    }
+    console.error('Authentication error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }

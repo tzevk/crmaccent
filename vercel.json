@@ -9,7 +9,6 @@
     }
   },
   "env": {
-    "DEMO_MODE": "@demo_mode",
     "DB_HOST": "@db_host",
     "DB_PORT": "@db_port", 
     "DB_NAME": "@db_name",
@@ -18,7 +17,6 @@
   },
   "build": {
     "env": {
-      "DEMO_MODE": "@demo_mode",
       "DB_HOST": "@db_host",
       "DB_PORT": "@db_port", 
       "DB_NAME": "@db_name",

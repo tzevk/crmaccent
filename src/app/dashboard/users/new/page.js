@@ -100,8 +100,7 @@ export default function AddUser() {
       const data = await response.json();
 
       if (response.ok) {
-        const modeText = data.demo ? ' (Demo Mode)' : '';
-        setSuccess(`User "${data.user.username}" created successfully!${modeText} Redirecting to user list...`);
+        setSuccess(`User "${data.user.username}" created successfully! Redirecting to user list...`);
         setIsRedirecting(true);
         
         console.log('User created:', data.user);
