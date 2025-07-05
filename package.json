@@ -1,0 +1,29 @@
+{
+  "name": "crmaccent",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "build:analyze": "ANALYZE=true npm run build",
+    "deploy": "./deploy.sh",
+    "db:setup": "curl -X GET http://localhost:3000/api/setup-db",
+    "db:test": "curl -X GET http://localhost:3000/api/test-db"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "mysql2": "^3.14.1",
+    "next": "15.3.5",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.5",
+    "tailwindcss": "^4"
+  }
+}

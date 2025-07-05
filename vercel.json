@@ -1,0 +1,30 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
+  "functions": {
+    "src/pages/api/**/*.js": {
+      "maxDuration": 10
+    }
+  },
+  "env": {
+    "DEMO_MODE": "@demo_mode",
+    "DB_HOST": "@db_host",
+    "DB_PORT": "@db_port", 
+    "DB_NAME": "@db_name",
+    "DB_USER": "@db_user",
+    "DB_PASSWORD": "@db_password"
+  },
+  "build": {
+    "env": {
+      "DEMO_MODE": "@demo_mode",
+      "DB_HOST": "@db_host",
+      "DB_PORT": "@db_port", 
+      "DB_NAME": "@db_name",
+      "DB_USER": "@db_user",
+      "DB_PASSWORD": "@db_password"
+    }
+  },
+  "regions": ["iad1"]
+}
