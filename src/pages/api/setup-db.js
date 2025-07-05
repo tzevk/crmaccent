@@ -27,12 +27,12 @@ export default async function handler(req, res) {
     await executeQuery(createUsersTable);
     console.log('Users table created successfully');
 
-    // Insert test users (with plain text passwords for demo)
+    // Insert test users (with plain text passwords)
     const insertUsers = `
       INSERT IGNORE INTO users (username, password, email, first_name, last_name, role) VALUES 
-      ('admin', 'password123', 'admin@crmaccent.com', 'Admin', 'User', 'admin'),
-      ('manager', 'password123', 'manager@crmaccent.com', 'Manager', 'User', 'manager'),
-      ('testuser', 'password123', 'test@crmaccent.com', 'Test', 'User', 'user')
+      ('admin', 'admin123', 'admin@crmaccent.com', 'Admin', 'User', 'admin'),
+      ('manager', 'manager123', 'manager@crmaccent.com', 'Manager', 'User', 'manager'),
+      ('testuser', 'user123', 'test@crmaccent.com', 'Test', 'User', 'user')
     `;
 
     await executeQuery(insertUsers);

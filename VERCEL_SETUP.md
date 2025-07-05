@@ -111,6 +111,10 @@ You should see:
    - **Password**: `admin123`
 3. **IMPORTANT**: Change the admin password immediately after first login
 
+### Other Test Users (created during database setup):
+- **Manager**: username `manager`, password `manager123`
+- **User**: username `testuser`, password `user123`
+
 ## Troubleshooting
 
 ### Environment Variable Issues
@@ -161,8 +165,8 @@ You should see:
 
 ### Database Security
 - Database credentials are stored as Vercel environment variables
-- Passwords are hashed using bcrypt with salt rounds of 12
-- Database queries use parameterized statements
+- Passwords are stored as plain text (suitable for internal/demo use)
+- Database queries use parameterized statements to prevent SQL injection
 
 ### Application Security
 - HTTPS enabled automatically by Vercel

@@ -48,7 +48,7 @@
 ## 🚀 Production-Ready Features
 
 ### Security Enhancements
-- ✅ **Password Hashing**: All passwords now hashed with bcrypt (12 salt rounds)
+- ✅ **Simple Authentication**: Plain text passwords for ease of use
 - ✅ **Database Security**: Parameterized queries prevent SQL injection
 - ✅ **Environment Variables**: Sensitive data stored securely in Vercel
 - ✅ **Input Validation**: All forms validate input server-side
@@ -80,6 +80,7 @@ DB_PASSWORD=h4?6J60hd
 1. **Initialize Database**: Visit `/api/setup-db`
 2. **Test Connection**: Visit `/api/test-db`
 3. **First Login**: Use admin/admin123, then change password
+4. **Test Other Users**: manager/manager123, testuser/user123
 
 ## 🔧 Build Status
 - ✅ **Local Build**: Passes successfully

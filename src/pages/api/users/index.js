@@ -1,5 +1,4 @@
 import { executeQuery } from '../../../lib/db';
-import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
@@ -59,10 +58,7 @@ export default async function handler(req, res) {
         });
       }
 
-      // Hash password
-      const saltRounds = 12;
-      const hashedPassword = await bcrypt.hash(password, saltRounds);
-
+      // Store password as plain text (for simplicity)
       // Insert new user
       const insertQuery = `
         INSERT INTO users (username, email, first_name, last_name, role, password, is_active, created_at, updated_at) 
@@ -70,7 +66,7 @@ export default async function handler(req, res) {
       `;
       
       const result = await executeQuery(insertQuery, [
-        username, email, first_name, last_name, role, hashedPassword
+        username, email, first_name, last_name, role, password
       ]);
 
       // Get the created user (without password)

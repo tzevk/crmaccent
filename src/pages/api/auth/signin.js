@@ -1,5 +1,4 @@
 import { executeQuery } from '../../../lib/db';
-import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -23,8 +22,8 @@ export default async function handler(req, res) {
 
     const user = users[0];
 
-    // Compare passwords using bcrypt
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // Simple password comparison (for production, consider using hashed passwords)
+    const isPasswordValid = password === user.password;
 
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid username or password' });
