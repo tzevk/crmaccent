@@ -6,35 +6,19 @@ const dbConfig = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  connectionLimit: 10,
-  acquireTimeout: 60000,
   // Additional options for Plesk/remote connections
   ssl: process.env.DB_SSL === 'true' ? {
     rejectUnauthorized: false
   } : false,
-  connectTimeout: 60000,
+  connectTimeout: 30000,
 };
 
-let pool;
-
-export async function getConnection() {
-  if (!pool) {
-    try {
-      pool = mysql.createPool(dbConfig);
-      console.log('Database pool created successfully');
-    } catch (error) {
-      console.error('Failed to create database pool:', error);
-      throw error;
-    }
-  }
-  return pool;
-}
-
+// Use direct connections instead of pooling for Plesk compatibility
 export async function executeQuery(query, params = []) {
   let connection;
   try {
-    const pool = await getConnection();
-    connection = await pool.getConnection();
+    console.log('Creating database connection...');
+    connection = await mysql.createConnection(dbConfig);
     console.log('Database connection established');
     
     const [results] = await connection.execute(query, params);
@@ -52,7 +36,8 @@ export async function executeQuery(query, params = []) {
     throw error;
   } finally {
     if (connection) {
-      connection.release();
+      await connection.end();
+      console.log('Database connection closed');
     }
   }
 }
