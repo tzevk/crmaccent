@@ -168,7 +168,21 @@ export const projectsAPI = {
       ? `${API_BASE_URL}?${queryParams.toString()}`
       : API_BASE_URL;
 
-    return apiRequest(url);
+    try {
+      // Try regular API first
+      return await apiRequest(url);
+    } catch (error) {
+      console.log('Regular projects API failed, trying production fallback:', error.message);
+      
+      // Fallback to production API
+      try {
+        const productionUrl = url.replace('/api/projects', '/api/projects/production');
+        return await apiRequest(productionUrl);
+      } catch (productionError) {
+        console.error('Both regular and production APIs failed:', productionError.message);
+        throw new Error('Unable to fetch projects. Please check your connection and authentication.');
+      }
+    }
   },
 
   // Get a single project by ID with RBAC check
