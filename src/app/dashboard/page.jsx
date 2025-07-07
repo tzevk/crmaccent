@@ -28,6 +28,7 @@ import {
 
 // Import components
 import Navbar from '../../components/navigation/Navbar.jsx';
+import ActivityTimeline from '../../components/activities/ActivityTimeline.jsx';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -303,13 +304,7 @@ export default function Dashboard() {
               <h3 className="text-xl font-bold" style={{ color: '#64126D' }}>Recent Activity</h3>
               <Bell className="w-5 h-5" style={{ color: '#86288F' }} />
             </div>
-            <div className="space-y-4">
-              <div className="text-center py-8">
-                <Activity className="w-12 h-12 mx-auto mb-3" style={{ color: '#c084fc' }} />
-                <p className="text-gray-500">No recent activity to display</p>
-                <p className="text-sm text-gray-400 mt-1">Activity will appear as you use the system</p>
-              </div>
-            </div>
+            <ActivityTimeline limit={5} showHeader={false} />
           </div>
 
           {/* System Status */}

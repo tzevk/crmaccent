@@ -37,14 +37,18 @@ export default function AddLeadPage() {
     source: 'website',
     value: '',
     assigned_to: '',
-    notes: '',
+    description: '',
     address: '',
     city: '',
     state: '',
-    country: '',
-    website: '',
+    postal_code: '',
+    country: 'India',
     industry: '',
-    company_size: ''
+    website: '',
+    lead_score: 0,
+    next_follow_up: '',
+    notes: '',
+    tags: ''
   });
 
   const [errors, setErrors] = useState({});

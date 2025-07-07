@@ -34,3 +34,40 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## 🚀 Deployment
+
+### Production Setup
+1. Copy `.env.production.template` to `.env.production`
+2. Fill in all production environment variables
+3. Set up your production database
+4. Run the deployment script: `npm run deploy`
+5. Follow the `DEPLOYMENT_CHECKLIST.md`
+
+### Health Check
+- Health endpoint: `/api/health`
+- Use this for monitoring and load balancer health checks
+
+### Log Management
+The application includes a comprehensive logging system:
+- User activity logs
+- Audit trails for sensitive operations
+- Login/security logs
+- System event logs
+- Log analytics and reporting
+- Export functionality
+
+Access logs at: `/dashboard/logs` (requires appropriate permissions)
+
+### Features
+- ✅ Role-Based Access Control (RBAC)
+- ✅ Comprehensive Logging System  
+- ✅ Project Management
+- ✅ Lead Management
+- ✅ Client Management
+- ✅ User Management
+- ✅ Dashboard and Reports
+- ✅ Export/Import Functionality
+
+### Support
+For deployment assistance, check the deployment checklist and logs.
