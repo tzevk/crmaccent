@@ -1,6 +1,6 @@
-import { executeQuery } from '../../../../lib/db';
-import { checkEndpointPermission, PERMISSIONS } from '../../../../utils/authUtils';
-import { logUserActivity, logAuditTrail, LOG_ACTIONS, LOG_CATEGORIES, LOG_SEVERITY } from '../../../../utils/logUtils';
+import { executeQuery } from '@/lib/db';
+import { checkEndpointPermission, PERMISSIONS } from '@/utils/authUtils';
+import { logUserActivity, logAuditTrail, LOG_ACTIONS, LOG_CATEGORIES, LOG_SEVERITY } from '@/utils/logUtils';
 import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {

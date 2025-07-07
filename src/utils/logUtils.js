@@ -1,5 +1,5 @@
 // Comprehensive logging utilities for user activities and system events
-import { executeQuery } from '../lib/db';
+import { executeQuery } from '@/lib/db';
 
 // Get client IP address
 export const getClientIP = (req) => {

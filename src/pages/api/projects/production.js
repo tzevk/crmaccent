@@ -1,5 +1,5 @@
 // Production-friendly projects API
-import { getUserFromToken } from '../../../../utils/authUtils';
+import { getUserFromToken } from '@/utils/authUtils';
 
 // Mock data for production testing
 const mockProjects = [

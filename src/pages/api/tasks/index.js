@@ -1,6 +1,6 @@
-import { executeQuery } from '../../../../lib/db';
-import { authenticateEndpoint, checkEndpointPermission, PERMISSIONS } from '../../../../utils/authUtils';
-import { logUserActivity } from '../../../../utils/logUtils';
+import { executeQuery } from '@/lib/db';
+import { authenticateEndpoint, checkEndpointPermission, PERMISSIONS } from '@/utils/authUtils';
+import { logUserActivity } from '@/utils/logUtils';
 
 export default async function handler(req, res) {
   const { method } = req;

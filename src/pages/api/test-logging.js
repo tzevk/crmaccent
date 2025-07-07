@@ -1,4 +1,4 @@
-import { logUserActivity, logAuditTrail, logSystemEvent, LOG_ACTIONS, LOG_CATEGORIES, LOG_SEVERITY } from '../../../utils/logUtils';
+import { logUserActivity, logAuditTrail, logSystemEvent, LOG_ACTIONS, LOG_CATEGORIES, LOG_SEVERITY } from '@/utils/logUtils';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

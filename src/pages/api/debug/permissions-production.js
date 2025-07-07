@@ -1,5 +1,5 @@
 // Production-friendly permissions API that works without full database setup
-import { getUserFromToken } from '../../../../utils/authUtils';
+import { getUserFromToken } from '@/utils/authUtils';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

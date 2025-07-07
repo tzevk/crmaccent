@@ -1,5 +1,5 @@
 // Centralized authentication and authorization utilities
-import { executeQuery } from '../lib/db';
+import { executeQuery } from '@/lib/db';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';

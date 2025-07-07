@@ -1,5 +1,5 @@
-import { executeQuery } from '../../../lib/db';
-import { PERMISSIONS, ROLE_PERMISSIONS } from '../../../utils/rbac.js';
+import { executeQuery } from '@/lib/db';
+import { PERMISSIONS, ROLE_PERMISSIONS } from '@/utils/rbac';
 import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {

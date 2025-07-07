@@ -1,5 +1,5 @@
-import { executeQuery } from '../../../../lib/db';
-import { getUserFromToken } from '../../../../utils/authUtils';
+import { executeQuery } from '@/lib/db';
+import { getUserFromToken } from '@/utils/authUtils';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

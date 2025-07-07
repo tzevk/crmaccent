@@ -1,5 +1,5 @@
-import { executeQuery } from '../../../../lib/db';
-import { authenticateEndpoint } from '../../../../utils/authUtils';
+import { executeQuery } from '@/lib/db';
+import { authenticateEndpoint } from '@/utils/authUtils';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {

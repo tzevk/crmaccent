@@ -1,4 +1,4 @@
-import { executeQuery } from '../../../lib/db';
+import { executeQuery } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {
