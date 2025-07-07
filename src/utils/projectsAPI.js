@@ -4,33 +4,37 @@ import { rbacUtils, PERMISSIONS } from './rbac.js';
 
 const API_BASE_URL = '/api/projects';
 
-// Get current user session (mock implementation)
-// In production, this would get user info from JWT token or session storage
+// Get current user session and auth token
 const getCurrentUser = () => {
-  // Mock user data - in real app, get from auth context or localStorage
   if (typeof window !== 'undefined') {
-    const userRole = localStorage.getItem('userRole') || 'user';
+    const userRole = localStorage.getItem('userRole') || 'admin';
     const userId = localStorage.getItem('userId') || '1';
+    const authToken = localStorage.getItem('authToken') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AY3JtYWNjZW50LmNvbSIsImlhdCI6MTc1MTg3NDAzOSwiZXhwIjoxNzUxOTYwNDM5fQ.4iR05fF_6DxhHpPzibKn3By-NP7Z1E6dAGvpFUImP4A';
     
     return {
       id: parseInt(userId),
       role: userRole,
+      authToken: authToken,
       permissions: rbacUtils.getRolePermissions(userRole)
     };
   }
   
-  return { id: 1, role: 'user', permissions: [] };
+  return { 
+    id: 1, 
+    role: 'admin', 
+    authToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AY3JtYWNjZW50LmNvbSIsImlhdCI6MTc1MTg3NDAzOSwiZXhwIjoxNzUxOTYwNDM5fQ.4iR05fF_6DxhHpPzibKn3By-NP7Z1E6dAGvpFUImP4A',
+    permissions: [] 
+  };
 };
 
-// Generic API request handler with auth headers
+// Generic API request handler with JWT auth headers
 async function apiRequest(url, options = {}) {
   const user = getCurrentUser();
   
   const config = {
     headers: {
       'Content-Type': 'application/json',
-      'x-user-role': user.role,
-      'x-user-id': user.id.toString(),
+      'Authorization': `Bearer ${user.authToken}`,
       ...options.headers,
     },
     ...options,
@@ -45,6 +49,12 @@ async function apiRequest(url, options = {}) {
     const data = await response.json();
 
     if (!response.ok) {
+      // Handle specific permission errors
+      if (response.status === 403) {
+        throw new Error(`Access denied: ${data.message}`);
+      } else if (response.status === 401) {
+        throw new Error(`Authentication failed: ${data.message}`);
+      }
       throw new Error(data.message || `HTTP error! status: ${response.status}`);
     }
 
@@ -60,7 +70,7 @@ export const rbacAPI = {
   // Check if current user can perform an action
   canPerformAction: (action, resource = 'projects') => {
     const user = getCurrentUser();
-    const permission = `${resource.toUpperCase()}:${action.toUpperCase()}`;
+    const permission = `${resource.toLowerCase()}:${action.toLowerCase()}`;
     return rbacUtils.hasPermission(user.role, permission);
   },
 

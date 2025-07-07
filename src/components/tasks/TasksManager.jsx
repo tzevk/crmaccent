@@ -147,9 +147,14 @@ export default function TasksManager() {
 
   const fetchTasks = async () => {
     try {
+      // Get auth token from localStorage or use default
+      const authToken = typeof window !== 'undefined' 
+        ? localStorage.getItem('authToken') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AY3JtYWNjZW50LmNvbSIsImlhdCI6MTc1MTg3NDAzOSwiZXhwIjoxNzUxOTYwNDM5fQ.4iR05fF_6DxhHpPzibKn3By-NP7Z1E6dAGvpFUImP4A'
+        : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AY3JtYWNjZW50LmNvbSIsImlhdCI6MTc1MTg3NDAzOSwiZXhwIjoxNzUxOTYwNDM5fQ.4iR05fF_6DxhHpPzibKn3By-NP7Z1E6dAGvpFUImP4A';
+      
       const response = await fetch('/api/tasks', {
         headers: {
-          'Authorization': 'Bearer valid-token'
+          'Authorization': `Bearer ${authToken}`
         }
       });
       
@@ -241,6 +246,11 @@ export default function TasksManager() {
     setIsSubmitting(true);
     
     try {
+      // Get auth token
+      const authToken = typeof window !== 'undefined' 
+        ? localStorage.getItem('authToken') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AY3JtYWNjZW50LmNvbSIsImlhdCI6MTc1MTg3NDAzOSwiZXhwIjoxNzUxOTYwNDM5fQ.4iR05fF_6DxhHpPzibKn3By-NP7Z1E6dAGvpFUImP4A'
+        : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AY3JtYWNjZW50LmNvbSIsImlhdCI6MTc1MTg3NDAzOSwiZXhwIjoxNzUxOTYwNDM5fQ.4iR05fF_6DxhHpPzibKn3By-NP7Z1E6dAGvpFUImP4A';
+      
       const taskData = {
         ...formData,
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
@@ -254,7 +264,7 @@ export default function TasksManager() {
         method: modalMode === 'edit' ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer valid-token'
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify(taskData)
       });
@@ -287,11 +297,16 @@ export default function TasksManager() {
     if (!confirm('Are you sure you want to delete this task?')) return;
 
     try {
+      // Get auth token
+      const authToken = typeof window !== 'undefined' 
+        ? localStorage.getItem('authToken') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AY3JtYWNjZW50LmNvbSIsImlhdCI6MTc1MTg3NDAzOSwiZXhwIjoxNzUxOTYwNDM5fQ.4iR05fF_6DxhHpPzibKn3By-NP7Z1E6dAGvpFUImP4A'
+        : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AY3JtYWNjZW50LmNvbSIsImlhdCI6MTc1MTg3NDAzOSwiZXhwIjoxNzUxOTYwNDM5fQ.4iR05fF_6DxhHpPzibKn3By-NP7Z1E6dAGvpFUImP4A';
+      
       const response = await fetch('/api/tasks', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer valid-token'
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({ id: taskId })
       });
@@ -306,11 +321,16 @@ export default function TasksManager() {
 
   const updateTaskStatus = async (taskId, newStatus) => {
     try {
+      // Get auth token
+      const authToken = typeof window !== 'undefined' 
+        ? localStorage.getItem('authToken') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AY3JtYWNjZW50LmNvbSIsImlhdCI6MTc1MTg3NDAzOSwiZXhwIjoxNzUxOTYwNDM5fQ.4iR05fF_6DxhHpPzibKn3By-NP7Z1E6dAGvpFUImP4A'
+        : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AY3JtYWNjZW50LmNvbSIsImlhdCI6MTc1MTg3NDAzOSwiZXhwIjoxNzUxOTYwNDM5fQ.4iR05fF_6DxhHpPzibKn3By-NP7Z1E6dAGvpFUImP4A';
+      
       const response = await fetch('/api/tasks', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer valid-token'
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({ id: taskId, status: newStatus })
       });

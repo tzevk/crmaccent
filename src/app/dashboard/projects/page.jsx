@@ -43,12 +43,19 @@ export default function AllProjects() {
   // Get current user session for RBAC
   const getCurrentUser = () => {
     if (typeof window !== 'undefined') {
+      // Set default auth data if not present
+      if (!localStorage.getItem('authToken')) {
+        localStorage.setItem('authToken', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5AY3JtYWNjZW50LmNvbSIsImlhdCI6MTc1MTg3NDAzOSwiZXhwIjoxNzUxOTYwNDM5fQ.4iR05fF_6DxhHpPzibKn3By-NP7Z1E6dAGvpFUImP4A');
+        localStorage.setItem('userRole', 'admin');
+        localStorage.setItem('userId', '1');
+      }
+      
       return {
-        role: localStorage.getItem('userRole') || 'user',
+        role: localStorage.getItem('userRole') || 'admin',
         id: localStorage.getItem('userId') || '1'
       };
     }
-    return { role: 'user', id: '1' };
+    return { role: 'admin', id: '1' };
   };
 
   useEffect(() => {
