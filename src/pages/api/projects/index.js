@@ -1,6 +1,4 @@
-import { executeQuery } from '@/lib/db';
-import { authenticateEndpoint, checkEndpointPermission, PERMISSIONS, getUserFromToken, hasPermission } from '@/utils/authUtils';
-import { logUserActivity, logAuditTrail, LOG_ACTIONS, LOG_CATEGORIES, LOG_SEVERITY } from '@/utils/logUtils';
+import { executeQuery } from '../../../lib/db';
 
 export default async function handler(req, res) {
   const { method } = req;
@@ -20,9 +18,6 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error('Projects API Error:', error);
-    if (error.message.includes('authentication') || error.message.includes('Session')) {
-      return res.status(401).json({ message: error.message });
-    }
     return res.status(500).json({ 
       message: 'Internal server error', 
       error: error.message 
@@ -30,20 +25,14 @@ export default async function handler(req, res) {
   }
 }
 
-// GET /api/projects - Get projects with optional filtering
+// GET /api/projects - Get all projects with optional filtering
 async function handleGet(req, res) {
-  const { user, error } = await checkEndpointPermission(req, res, PERMISSIONS.PROJECT_VIEW);
-  if (error) {
-    return res.status(error.status).json({ message: error.message });
-  }
-
   const { 
     status, 
     priority,
-    client_id,
     search, 
     page = 1, 
-    limit = 20,
+    limit = 50,
     sortBy = 'created_at',
     sortOrder = 'DESC'
   } = req.query;
@@ -51,15 +40,21 @@ async function handleGet(req, res) {
   let query = `
     SELECT 
       p.*,
-      creator.first_name as created_by_name,
-      creator.last_name as created_by_lastname
+      u.first_name as manager_name,
+      u.last_name as manager_lastname,
+      l.name as lead_name,
+      l.company as lead_company,
+      (SELECT COUNT(*) FROM project_tasks pt WHERE pt.project_id = p.id) as total_tasks,
+      (SELECT COUNT(*) FROM project_tasks pt WHERE pt.project_id = p.id AND pt.status = 'completed') as completed_tasks
     FROM projects p
-    LEFT JOIN users creator ON p.created_by = creator.id
+    LEFT JOIN users u ON p.project_manager_id = u.id
+    LEFT JOIN leads l ON p.lead_id = l.id
     WHERE 1=1
   `;
-
+  
   const params = [];
 
+  // Add filters
   if (status && status !== 'all') {
     query += ' AND p.status = ?';
     params.push(status);
@@ -70,15 +65,10 @@ async function handleGet(req, res) {
     params.push(priority);
   }
 
-  if (client_id) {
-    query += ' AND p.client_id = ?';
-    params.push(client_id);
-  }
-
   if (search) {
-    query += ' AND (p.name LIKE ? OR p.description LIKE ?)';
+    query += ' AND (p.name LIKE ? OR p.description LIKE ? OR l.name LIKE ? OR l.company LIKE ?)';
     const searchPattern = `%${search}%`;
-    params.push(searchPattern, searchPattern);
+    params.push(searchPattern, searchPattern, searchPattern, searchPattern);
   }
 
   // Add sorting
@@ -102,6 +92,7 @@ async function handleGet(req, res) {
   let countQuery = `
     SELECT COUNT(*) as total
     FROM projects p
+    LEFT JOIN leads l ON p.lead_id = l.id
     WHERE 1=1
   `;
   
@@ -114,36 +105,14 @@ async function handleGet(req, res) {
     countQuery += ' AND p.priority = ?';
     countParams.push(priority);
   }
-  if (client_id) {
-    countQuery += ' AND p.client_id = ?';
-    countParams.push(client_id);
-  }
   if (search) {
-    countQuery += ' AND (p.name LIKE ? OR p.description LIKE ?)';
+    countQuery += ' AND (p.name LIKE ? OR p.description LIKE ? OR l.name LIKE ? OR l.company LIKE ?)';
     const searchPattern = `%${search}%`;
-    countParams.push(searchPattern, searchPattern);
+    countParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
   }
 
   const countResult = await executeQuery(countQuery, countParams);
   const totalCount = countResult[0].total;
-
-  // Log project list view
-  await logUserActivity({
-    userId: user.id,
-    action: LOG_ACTIONS.PROJECT_VIEW,
-    entityType: 'projects',
-    entityId: null,
-    description: `Viewed projects list (${projects.length} of ${totalCount} total)`,
-    category: LOG_CATEGORIES.PROJECT,
-    severity: LOG_SEVERITY.INFO,
-    req,
-    metadata: { 
-      count: projects.length, 
-      totalCount, 
-      filters: { status, priority, client_id, search },
-      pagination: { page, limit }
-    }
-  });
 
   return res.status(200).json({
     projects,
@@ -159,22 +128,22 @@ async function handleGet(req, res) {
 
 // POST /api/projects - Create a new project
 async function handlePost(req, res) {
-  const { user, error } = await checkEndpointPermission(req, res, PERMISSIONS.PROJECT_CREATE);
-  if (error) {
-    return res.status(error.status).json({ message: error.message });
-  }
-
   const {
     name,
     description,
     client_id,
+    lead_id,
     status = 'planning',
     priority = 'medium',
     start_date,
     end_date,
+    estimated_hours = 0,
     budget = 0,
-    cost = 0,
-    progress_percentage = 0
+    project_manager_id,
+    team_members,
+    tags,
+    notes,
+    created_by
   } = req.body;
 
   // Validation
@@ -184,50 +153,38 @@ async function handlePost(req, res) {
 
   const query = `
     INSERT INTO projects (
-      name, description, client_id, status, priority, start_date, end_date,
-      budget, cost, progress_percentage, created_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      name, description, client_id, lead_id, status, priority, start_date, end_date,
+      estimated_hours, budget, project_manager_id, team_members, tags, notes, created_by
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const params = [
-    name,
-    description || null,
+    name, 
+    description || null, 
     client_id || null,
-    status,
-    priority,
+    lead_id || null,
+    status, 
+    priority, 
     start_date || null,
     end_date || null,
+    estimated_hours, 
     budget,
-    cost,
-    progress_percentage,
-    user.id
+    project_manager_id || null,
+    team_members ? JSON.stringify(team_members) : null,
+    tags || null, 
+    notes || null, 
+    created_by || null
   ];
 
   const result = await executeQuery(query, params);
 
-  // Log project creation
-  await logUserActivity({
-    userId: user.id,
-    action: LOG_ACTIONS.PROJECT_CREATE,
-    entityType: 'project',
-    entityId: result.insertId,
-    description: `Created project: ${name}`,
-    category: LOG_CATEGORIES.PROJECT,
-    severity: LOG_SEVERITY.INFO,
-    req,
-    metadata: { name, client_id, status, priority, budget, start_date, end_date }
-  });
-
-  await logAuditTrail({
-    userId: user.id,
-    action: 'PROJECT_CREATE',
-    tableName: 'projects',
-    recordId: result.insertId,
-    operationType: 'CREATE',
-    newValue: { name, description, client_id, status, priority, start_date, end_date, budget, cost, progress_percentage },
-    req,
-    riskLevel: 'low'
-  });
+  // Log activity
+  if (result.insertId) {
+    await executeQuery(
+      'INSERT INTO project_activities (project_id, activity_type, subject, description, created_by) VALUES (?, ?, ?, ?, ?)',
+      [result.insertId, 'milestone', 'Project created', `Project "${name}" was created`, created_by || null]
+    );
+  }
 
   return res.status(201).json({
     message: 'Project created successfully',
@@ -237,21 +194,15 @@ async function handlePost(req, res) {
 
 // PUT /api/projects - Update a project
 async function handlePut(req, res) {
-  const { user, error } = await checkEndpointPermission(req, res, PERMISSIONS.PROJECT_EDIT);
-  if (error) {
-    return res.status(error.status).json({ message: error.message });
-  }
-
-  const { id, ...updateData } = req.body;
+  const { id, updated_by, ...updateData } = req.body;
 
   if (!id) {
     return res.status(400).json({ message: 'Project ID is required' });
   }
 
-  // Check if project exists
-  const existingProject = await executeQuery('SELECT * FROM projects WHERE id = ?', [id]);
-  if (existingProject.length === 0) {
-    return res.status(404).json({ message: 'Project not found' });
+  // Handle team_members JSON conversion
+  if (updateData.team_members && Array.isArray(updateData.team_members)) {
+    updateData.team_members = JSON.stringify(updateData.team_members);
   }
 
   // Build dynamic update query
@@ -272,30 +223,18 @@ async function handlePut(req, res) {
     return res.status(404).json({ message: 'Project not found' });
   }
 
-  // Log project update
-  await logUserActivity({
-    userId: user.id,
-    action: LOG_ACTIONS.PROJECT_UPDATE,
-    entityType: 'project',
-    entityId: parseInt(id),
-    description: `Updated project (ID: ${id})`,
-    category: LOG_CATEGORIES.PROJECT,
-    severity: LOG_SEVERITY.INFO,
-    req,
-    metadata: { updatedFields: fields, updateData }
-  });
-
-  await logAuditTrail({
-    userId: user.id,
-    action: 'PROJECT_UPDATE',
-    tableName: 'projects',
-    recordId: parseInt(id),
-    operationType: 'UPDATE',
-    oldValue: existingProject[0],
-    newValue: updateData,
-    req,
-    riskLevel: 'low'
-  });
+  // Log activity
+  if (updateData.status) {
+    await executeQuery(
+      'INSERT INTO project_activities (project_id, activity_type, subject, description, created_by) VALUES (?, ?, ?, ?, ?)',
+      [id, 'status_change', 'Project status updated', `Project status changed to ${updateData.status}`, updated_by]
+    );
+  } else {
+    await executeQuery(
+      'INSERT INTO project_activities (project_id, activity_type, subject, description, created_by) VALUES (?, ?, ?, ?, ?)',
+      [id, 'comment', 'Project updated', `Project information was updated`, updated_by]
+    );
+  }
 
   return res.status(200).json({
     message: 'Project updated successfully'
@@ -304,27 +243,10 @@ async function handlePut(req, res) {
 
 // DELETE /api/projects - Delete a project
 async function handleDelete(req, res) {
-  const { user, error } = await checkEndpointPermission(req, res, PERMISSIONS.PROJECT_DELETE);
-  if (error) {
-    return res.status(error.status).json({ message: error.message });
-  }
-
   const { id } = req.query;
 
   if (!id) {
     return res.status(400).json({ message: 'Project ID is required' });
-  }
-
-  // Check if project has associated tasks
-  const taskCount = await executeQuery(
-    'SELECT COUNT(*) as count FROM project_tasks WHERE project_id = ?',
-    [id]
-  );
-
-  if (taskCount[0].count > 0) {
-    return res.status(400).json({ 
-      message: 'Cannot delete project with associated tasks. Delete tasks first.' 
-    });
   }
 
   const result = await executeQuery('DELETE FROM projects WHERE id = ?', [id]);

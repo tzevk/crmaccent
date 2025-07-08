@@ -1,15 +1,8 @@
-import { executeQuery } from '@/lib/db';
-import { authenticateEndpoint, checkEndpointPermission, PERMISSIONS } from '@/utils/authUtils';
+import { executeQuery } from '../../../lib/db';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
-  }
-
-  // Check permissions for viewing project statistics
-  const { user, error } = await checkEndpointPermission(req, res, PERMISSIONS.PROJECT_VIEW);
-  if (error) {
-    return res.status(error.status).json({ message: error.message });
   }
 
   try {

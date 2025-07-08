@@ -1,5 +1,4 @@
-import { executeQuery } from '@/lib/db';
-import { authenticateEndpoint, checkEndpointPermission, PERMISSIONS } from '@/utils/authUtils';
+import { executeQuery } from '../../../lib/db';
 
 export default async function handler(req, res) {
   const { method } = req;
@@ -28,11 +27,6 @@ export default async function handler(req, res) {
 
 // GET /api/projects/tasks - Get tasks with optional filtering
 async function handleGet(req, res) {
-  const { user, error } = await checkEndpointPermission(req, res, PERMISSIONS.TASK_VIEW);
-  if (error) {
-    return res.status(error.status).json({ message: error.message });
-  }
-
   const { 
     project_id,
     status, 
@@ -154,11 +148,6 @@ async function handleGet(req, res) {
 
 // POST /api/projects/tasks - Create a new task
 async function handlePost(req, res) {
-  const { user, error } = await checkEndpointPermission(req, res, PERMISSIONS.TASK_CREATE);
-  if (error) {
-    return res.status(error.status).json({ message: error.message });
-  }
-
   const {
     project_id,
     title,
@@ -171,7 +160,8 @@ async function handlePost(req, res) {
     due_date,
     parent_task_id,
     order_index = 0,
-    tags
+    tags,
+    created_by
   } = req.body;
 
   // Validation
@@ -202,7 +192,7 @@ async function handlePost(req, res) {
     parent_task_id || null,
     order_index,
     tags || null, 
-    user.id
+    created_by || null
   ];
 
   const result = await executeQuery(query, params);
@@ -211,7 +201,7 @@ async function handlePost(req, res) {
   if (result.insertId) {
     await executeQuery(
       'INSERT INTO project_activities (project_id, task_id, activity_type, subject, description, created_by) VALUES (?, ?, ?, ?, ?, ?)',
-      [project_id, result.insertId, 'task_created', 'Task created', `Task "${title}" was created`, user.id]
+      [project_id, result.insertId, 'task_created', 'Task created', `Task "${title}" was created`, created_by || null]
     );
   }
 
@@ -223,12 +213,7 @@ async function handlePost(req, res) {
 
 // PUT /api/projects/tasks - Update a task
 async function handlePut(req, res) {
-  const { user, error } = await checkEndpointPermission(req, res, PERMISSIONS.TASK_EDIT);
-  if (error) {
-    return res.status(error.status).json({ message: error.message });
-  }
-
-  const { id, ...updateData } = req.body;
+  const { id, updated_by, ...updateData } = req.body;
 
   if (!id) {
     return res.status(400).json({ message: 'Task ID is required' });
@@ -271,18 +256,18 @@ async function handlePut(req, res) {
     if (updateData.status === 'completed') {
       await executeQuery(
         'INSERT INTO project_activities (project_id, task_id, activity_type, subject, description, created_by) VALUES (?, ?, ?, ?, ?, ?)',
-        [currentTask[0].project_id, id, 'task_completed', 'Task completed', `Task "${currentTask[0].title}" was completed`, user.id]
+        [currentTask[0].project_id, id, 'task_completed', 'Task completed', `Task "${currentTask[0].title}" was completed`, updated_by]
       );
     } else {
       await executeQuery(
         'INSERT INTO project_activities (project_id, task_id, activity_type, subject, description, created_by) VALUES (?, ?, ?, ?, ?, ?)',
-        [currentTask[0].project_id, id, 'status_change', 'Task status updated', `Task status changed to ${updateData.status}`, user.id]
+        [currentTask[0].project_id, id, 'status_change', 'Task status updated', `Task status changed to ${updateData.status}`, updated_by]
       );
     }
   } else {
     await executeQuery(
       'INSERT INTO project_activities (project_id, task_id, activity_type, subject, description, created_by) VALUES (?, ?, ?, ?, ?, ?)',
-      [currentTask[0].project_id, id, 'comment', 'Task updated', `Task information was updated`, user.id]
+      [currentTask[0].project_id, id, 'comment', 'Task updated', `Task information was updated`, updated_by]
     );
   }
 
@@ -293,11 +278,6 @@ async function handlePut(req, res) {
 
 // DELETE /api/projects/tasks - Delete a task
 async function handleDelete(req, res) {
-  const { user, error } = await checkEndpointPermission(req, res, PERMISSIONS.TASK_DELETE);
-  if (error) {
-    return res.status(error.status).json({ message: error.message });
-  }
-
   const { id } = req.query;
 
   if (!id) {
