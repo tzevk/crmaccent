@@ -34,57 +34,56 @@ export default function ImportLeadsPage() {
   const [importResults, setImportResults] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Demo CSV data for preview
+  // Demo CSV data for preview matching the actual lead form fields
   const sampleCsvData = [
     {
-      'Full Name': 'John Smith',
-      'Company': 'Tech Solutions Inc',
-      'Email': 'john@techsolutions.com',
-      'Phone': '+1 (555) 123-4567',
-      'Status': 'hot',
-      'Source': 'website',
-      'Value': '25000',
+      'Company Name': 'Tech Solutions Inc',
+      'Contact Name': 'John Smith',
+      'Contact Email': 'john@techsolutions.com',
       'City': 'New York',
-      'State': 'NY'
+      'Enquiry Type': 'Email',
+      'Project Description': 'Looking for web development services',
+      'Enquiry Status': 'New',
+      'Project Status': 'Open',
+      'Type': 'New'
     },
     {
-      'Full Name': 'Emily Davis',
-      'Company': 'Marketing Pro',
-      'Email': 'emily@marketingpro.com',
-      'Phone': '+1 (555) 987-6543',
-      'Status': 'warm',
-      'Source': 'referral',
-      'Value': '15000',
+      'Company Name': 'Marketing Pro',
+      'Contact Name': 'Emily Davis',
+      'Contact Email': 'emily@marketingpro.com',
       'City': 'Los Angeles',
-      'State': 'CA'
+      'Enquiry Type': 'Website',
+      'Project Description': 'Need digital marketing consultation',
+      'Enquiry Status': 'New',
+      'Project Status': 'Open',
+      'Type': 'New'
     },
     {
-      'Full Name': 'David Johnson',
-      'Company': 'Startup Hub',
-      'Email': 'david@startuphub.com',
-      'Phone': '+1 (555) 456-7890',
-      'Status': 'cold',
-      'Source': 'cold_call',
-      'Value': '8000',
+      'Company Name': 'Startup Hub',
+      'Contact Name': 'David Johnson',
+      'Contact Email': 'david@startuphub.com',
       'City': 'Chicago',
-      'State': 'IL'
+      'Enquiry Type': 'Phone',
+      'Project Description': 'Software development project',
+      'Enquiry Status': 'New',
+      'Project Status': 'Open',
+      'Type': 'New'
     }
   ];
 
   const fieldMappingOptions = [
-    { value: 'name', label: 'Lead Name' },
-    { value: 'company', label: 'Company' },
-    { value: 'email', label: 'Email' },
-    { value: 'phone', label: 'Phone' },
-    { value: 'status', label: 'Status' },
-    { value: 'source', label: 'Source' },
-    { value: 'value', label: 'Value' },
+    { value: 'company_name', label: 'Company Name' },
+    { value: 'contact_name', label: 'Contact Name' },
+    { value: 'contact_email', label: 'Contact Email' },
     { value: 'city', label: 'City' },
-    { value: 'state', label: 'State' },
-    { value: 'country', label: 'Country' },
-    { value: 'website', label: 'Website' },
-    { value: 'industry', label: 'Industry' },
-    { value: 'notes', label: 'Notes' },
+    { value: 'enquiry_type', label: 'Enquiry Type' },
+    { value: 'project_description', label: 'Project Description' },
+    { value: 'enquiry_status', label: 'Enquiry Status' },
+    { value: 'project_status', label: 'Project Status' },
+    { value: 'type', label: 'Type' },
+    { value: 'followup1_description', label: 'Follow-up 1 Description' },
+    { value: 'followup2_description', label: 'Follow-up 2 Description' },
+    { value: 'followup3_description', label: 'Follow-up 3 Description' },
     { value: '', label: 'Do not import' }
   ];
 
@@ -148,14 +147,14 @@ export default function ImportLeadsPage() {
   };
 
   const validateMapping = () => {
-    const requiredFields = ['name', 'email'];
+    const requiredFields = ['company_name', 'contact_name', 'contact_email'];
     const mappedFields = Object.values(mappingData);
     return requiredFields.every(field => mappedFields.includes(field));
   };
 
   const handleImport = async () => {
     if (!validateMapping()) {
-      alert('Please map required fields: Name and Email');
+      alert('Please map required fields: Company Name, Contact Name and Contact Email');
       return;
     }
 
@@ -184,9 +183,9 @@ export default function ImportLeadsPage() {
 
   const downloadTemplate = () => {
     const csvContent = "data:text/csv;charset=utf-8," + 
-      "Full Name,Company,Email,Phone,Status,Source,Value,City,State\n" +
-      "John Smith,Tech Solutions Inc,john@techsolutions.com,+1 (555) 123-4567,hot,website,25000,New York,NY\n" +
-      "Emily Davis,Marketing Pro,emily@marketingpro.com,+1 (555) 987-6543,warm,referral,15000,Los Angeles,CA";
+      "Company Name,Contact Name,Contact Email,City,Enquiry Type,Project Description,Enquiry Status,Project Status,Type\n" +
+      "Tech Solutions Inc,John Smith,john@techsolutions.com,New York,Email,Looking for web development services,New,Open,New\n" +
+      "Marketing Pro,Emily Davis,emily@marketingpro.com,Los Angeles,Website,Need digital marketing consultation,New,Open,New";
     
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");

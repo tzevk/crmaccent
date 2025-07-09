@@ -71,7 +71,7 @@ function AddTaskContent() {
       const data = await projectsAPI.getAll();
       setProjects(data.projects || []);
     } catch (error) {
-      console.error('Failed to fetch projects:', error);
+      setError('Failed to fetch projects. Please try again.');
     } finally {
       setProjectLoading(false);
     }
@@ -83,7 +83,8 @@ function AddTaskContent() {
       const data = await response.json();
       setUsers(data.users || []);
     } catch (error) {
-      console.error('Failed to fetch users:', error);
+      // Handle silently in production
+      setUsers([]);
     }
   };
 
@@ -109,7 +110,6 @@ function AddTaskContent() {
         router.push(`/dashboard/projects/${formData.project_id}`);
       }, 1500);
     } catch (error) {
-      console.error('Failed to create task:', error);
       setError(error.message || 'Failed to create task. Please try again.');
     } finally {
       setLoading(false);

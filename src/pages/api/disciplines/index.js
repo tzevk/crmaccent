@@ -1,9 +1,11 @@
-import { executeQuery } from '../../../lib/db';
+import { getDbConnection } from '../../../lib/db';
 
 export default async function handler(req, res) {
   const { method } = req;
 
   try {
+    const db = await getDbConnection();
+    
     switch (method) {
       case 'GET':
         // Get all disciplines with optional filtering
@@ -42,7 +44,7 @@ export default async function handler(req, res) {
         
         query += ' ORDER BY discipline_name ASC';
         
-        const disciplines = await executeQuery(query, params);
+        const [disciplines] = await db.query(query, params);
         
         return res.status(200).json({
           success: true,
@@ -68,7 +70,7 @@ export default async function handler(req, res) {
         }
 
         // Check if discipline already exists
-        const existingDiscipline = await executeQuery(
+        const [existingDiscipline] = await db.query(
           'SELECT id FROM disciplines WHERE discipline_name = ?',
           [discipline_name]
         );
@@ -91,7 +93,7 @@ export default async function handler(req, res) {
           ) VALUES (?, ?, ?, ?, true)
         `;
 
-        const result = await executeQuery(createQuery, [
+        const [result] = await db.query(createQuery, [
           discipline_name,
           start_date || null,
           end_date || null,
@@ -99,7 +101,7 @@ export default async function handler(req, res) {
         ]);
 
         // Return the created discipline
-        const newDiscipline = await executeQuery(
+        const [newDiscipline] = await db.query(
           'SELECT * FROM disciplines WHERE id = ?',
           [result.insertId]
         );

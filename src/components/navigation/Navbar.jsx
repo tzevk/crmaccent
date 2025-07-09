@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   ChevronDown, Home, Target, Users, LayoutList,
-  Briefcase, Calendar, Building2, BarChart3, Settings
+  Briefcase, Calendar, Building2, BarChart3, Settings, Send
 } from 'lucide-react'
 
 // Define navigation items with icons and submenus
@@ -20,20 +20,9 @@ const navItems = [
     children: [
       { label: 'All Leads', href: '/dashboard/leads' },
       { label: 'Add Lead', href: '/dashboard/leads/add' },
-      { label: 'Pipeline', href: '/dashboard/leads/pipeline' }
+      { label: 'Import Leads', href: '/dashboard/leads/import' }
     ]
   },
-
-  {
-  label: 'Masters',
-  key: 'masters',
-  icon: LayoutList,
-  children: [
-    { label: 'Users Master', href: '/dashboard/masters/users' },
-    { label: 'Project Master', href: '/dashboard/masters/projects' },
-    { label: 'Leads Master', href: '/dashboard/masters/lead-sources' },
-  ]
-},
 
   {
     label: 'Companies',
@@ -41,8 +30,31 @@ const navItems = [
     icon: Building2,
     children: [
       { label: 'All Companies', href: '/dashboard/companies' },
-      { label: 'Add Company', href: '/dashboard/companies/add' },
-      { label: 'Outreach Tracker', href: '/dashboard/companies/outreach' }
+      { label: 'Add Company', href: '/dashboard/companies/add' }
+    ]
+  },
+
+  {
+    label: 'Outreach',
+    key: 'outreach',
+    icon: Send,
+    children: [
+      { label: 'Outreach Tracker', href: '/dashboard/outreach' },
+      { label: 'New Outreach', href: '/dashboard/outreach/new' }
+    ]
+  },
+
+  {
+    label: 'Masters',
+    key: 'masters',
+    icon: LayoutList,
+    children: [
+      { label: 'All Masters', href: '/dashboard/masters' },
+      { label: 'Users Master', href: '/dashboard/masters/users' },
+      { label: 'Projects Master', href: '/dashboard/masters/projects' },
+      { label: 'Activities Master', href: '/dashboard/masters/activities' },
+      { label: 'Disciplines Master', href: '/dashboard/masters/disciplines' },
+      { label: 'Lead Sources Master', href: '/dashboard/masters/lead-sources' }
     ]
   },
   {
@@ -99,13 +111,22 @@ export default function Navbar() {
   const [activeDropdown, setActiveDropdown] = useState(null)
 
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-sm" style={{ borderBottom: `2px solid #86288F` }}>
-      <nav className="max-w-screen-2xl mx-auto px-6 py-3 flex justify-between items-center">
-        {/* Logo */}
-        <Link href="/dashboard" className="text-xl font-bold tracking-tight" style={{ color: '#64126D' }}>ATS CRM</Link>
+    <header className="sticky top-0 z-50 bg-white shadow-lg border-b-4 border-purple-600">
+      <nav className="max-w-screen-2xl mx-auto px-6 py-4 flex justify-between items-center">
+        {/* Enhanced Logo */}
+        <Link 
+          href="/dashboard" 
+          className="flex items-center space-x-3 text-2xl font-bold tracking-tight group"
+        >
+          <div className="p-2 bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg group-hover:from-purple-700 group-hover:to-purple-800 transition-all">
+            <Target className="h-6 w-6 text-white" />
+          </div>
+          <div className="hidden sm:block">
+          </div>
+        </Link>
 
-        {/* Navigation */}
-        <ul className="flex gap-6 items-center">
+        {/* Enhanced Navigation */}
+        <ul className="flex gap-2 items-center">
           {navItems.map((item) =>
             item.children ? (
               <li key={item.key} className="relative group">
@@ -113,53 +134,36 @@ export default function Navbar() {
                   onClick={() =>
                     setActiveDropdown(activeDropdown === item.key ? null : item.key)
                   }
-                  className="flex items-center gap-1 px-3 py-2 text-sm rounded-md transition-colors"
-                  style={{
-                    backgroundColor: activeDropdown === item.key ? '#86288F' : 'transparent',
-                    color: activeDropdown === item.key ? '#FFFFFF' : '#64126D'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (activeDropdown !== item.key) {
-                      e.target.style.backgroundColor = '#86288F';
-                      e.target.style.color = '#FFFFFF';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (activeDropdown !== item.key) {
-                      e.target.style.backgroundColor = 'transparent';
-                      e.target.style.color = '#64126D';
-                    }
-                  }}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    activeDropdown === item.key
+                      ? 'bg-purple-600 text-white shadow-lg'
+                      : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'
+                  }`}
                 >
                   <item.icon size={16} />
                   {item.label}
-                  <ChevronDown size={14} className="ml-1 transition-transform duration-200 group-hover:rotate-180" />
+                  <ChevronDown 
+                    size={14} 
+                    className={`ml-1 transition-transform duration-200 ${
+                      activeDropdown === item.key ? 'rotate-180' : ''
+                    }`} 
+                  />
                 </button>
                 {activeDropdown === item.key && (
-                  <ul className="absolute top-11 left-0 bg-white shadow-lg rounded-md w-56 z-50" style={{ border: `2px solid #86288F` }}>
+                  <ul className="absolute top-12 left-0 bg-white shadow-xl rounded-xl w-64 z-50 border border-gray-200 overflow-hidden">
+                    <div className="bg-gradient-to-r from-purple-50 to-purple-100 px-4 py-2 border-b border-purple-200">
+                      <div className="text-sm font-semibold text-purple-800">{item.label}</div>
+                    </div>
                     {item.children.map((sub) => (
                       <li key={sub.href}>
                         <Link
                           href={sub.href}
                           onClick={() => setActiveDropdown(null)}
-                          className="block px-4 py-2 text-sm transition-colors rounded-md"
-                          style={{
-                            backgroundColor: pathname === sub.href ? '#86288F' : 'transparent',
-                            color: pathname === sub.href ? '#FFFFFF' : '#64126D',
-                            fontWeight: pathname === sub.href ? 'bold' : 'normal'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (pathname !== sub.href) {
-                              e.target.style.backgroundColor = '#86288F';
-                              e.target.style.color = '#FFFFFF';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (pathname !== sub.href) {
-                              e.target.style.backgroundColor = 'transparent';
-                              e.target.style.color = '#64126D';
-                            }
-                          }}
+                          className={`block px-4 py-3 text-sm transition-all duration-200 hover:bg-purple-50 ${
+                            pathname === sub.href
+                              ? 'bg-purple-100 text-purple-800 font-semibold border-r-4 border-purple-600'
+                              : 'text-gray-700 hover:text-purple-700'
+                          }`}
                         >
                           {sub.label}
                         </Link>
@@ -172,23 +176,11 @@ export default function Navbar() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className="flex items-center gap-1 px-3 py-2 text-sm rounded-md transition-all"
-                  style={{
-                    backgroundColor: pathname === item.href ? '#86288F' : 'transparent',
-                    color: pathname === item.href ? '#FFFFFF' : '#64126D'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (pathname !== item.href) {
-                      e.target.style.backgroundColor = '#86288F';
-                      e.target.style.color = '#FFFFFF';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (pathname !== item.href) {
-                      e.target.style.backgroundColor = 'transparent';
-                      e.target.style.color = '#64126D';
-                    }
-                  }}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    pathname === item.href
+                      ? 'bg-purple-600 text-white shadow-lg'
+                      : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'
+                  }`}
                 >
                   <item.icon size={16} />
                   {item.label}
