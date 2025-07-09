@@ -105,7 +105,7 @@ export default function AddLeadPage() {
       
       setCompanies(companiesArray);
     } catch (error) {
-      console.error('Error fetching companies:', error);
+      // Handle error silently in production
       setCompanies([]);
     } finally {
       setCompaniesLoading(false);
@@ -177,7 +177,7 @@ export default function AddLeadPage() {
         throw new Error(errorData.message || 'Failed to create lead');
       }
     } catch (error) {
-      console.error('Error creating lead:', error);
+      // Show user-friendly error message without logging to console
       alert('Error creating lead: ' + error.message);
     } finally {
       setIsLoading(false);
