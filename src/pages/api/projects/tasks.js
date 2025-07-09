@@ -41,7 +41,23 @@ async function handleGet(req, res) {
 
   let query = `
     SELECT 
-      pt.*,
+      pt.id,
+      pt.project_id,
+      pt.task_name as title,
+      pt.description,
+      pt.status,
+      pt.priority,
+      pt.assigned_to,
+      pt.start_date,
+      pt.due_date,
+      pt.completed_date,
+      pt.estimated_hours,
+      pt.actual_hours,
+      pt.progress_percentage,
+      pt.parent_task_id,
+      pt.created_by,
+      pt.created_at,
+      pt.updated_at,
       p.name as project_name,
       u.first_name as assigned_to_name,
       u.last_name as assigned_to_lastname,
@@ -174,14 +190,14 @@ async function handlePost(req, res) {
 
   const query = `
     INSERT INTO project_tasks (
-      project_id, title, description, status, priority, assigned_to, estimated_hours,
-      start_date, due_date, parent_task_id, order_index, tags, created_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      project_id, task_name, description, status, priority, assigned_to, estimated_hours,
+      start_date, due_date, parent_task_id, created_by
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const params = [
     project_id,
-    title, 
+    title, // task_name in the database
     description || null, 
     status, 
     priority, 
@@ -190,8 +206,6 @@ async function handlePost(req, res) {
     start_date || null,
     due_date || null,
     parent_task_id || null,
-    order_index,
-    tags || null, 
     created_by || null
   ];
 
@@ -219,8 +233,14 @@ async function handlePut(req, res) {
     return res.status(400).json({ message: 'Task ID is required' });
   }
 
+  // Map 'title' to 'task_name' if it exists
+  if (updateData.title !== undefined) {
+    updateData.task_name = updateData.title;
+    delete updateData.title;
+  }
+
   // Get current task to check for status changes
-  const currentTask = await executeQuery('SELECT * FROM project_tasks WHERE id = ?', [id]);
+  const currentTask = await executeQuery('SELECT *, task_name as title FROM project_tasks WHERE id = ?', [id]);
   if (currentTask.length === 0) {
     return res.status(404).json({ message: 'Task not found' });
   }
@@ -256,7 +276,7 @@ async function handlePut(req, res) {
     if (updateData.status === 'completed') {
       await executeQuery(
         'INSERT INTO project_activities (project_id, task_id, activity_type, subject, description, created_by) VALUES (?, ?, ?, ?, ?, ?)',
-        [currentTask[0].project_id, id, 'task_completed', 'Task completed', `Task "${currentTask[0].title}" was completed`, updated_by]
+        [currentTask[0].project_id, id, 'task_completed', 'Task completed', `Task "${currentTask[0].task_name}" was completed`, updated_by]
       );
     } else {
       await executeQuery(

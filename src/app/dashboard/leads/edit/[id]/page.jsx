@@ -25,12 +25,12 @@ import {
 // Import components
 import Navbar from '../../../../../components/navigation/Navbar.jsx';
 // Import API utility
-import { leadsAPI, leadUtils } from '../../../../../utils/leadsAPI.js';
+import leadsAPI, { leadUtils } from '../../../../../utils/leadsAPI.js';
 
 export default function EditLeadPage() {
   const router = useRouter();
   const params = useParams();
-  const leadId = params.id;
+  const leadId = params?.id; // Using optional chaining to avoid errors
   
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -85,15 +85,15 @@ export default function EditLeadPage() {
       
       // Populate form with lead data
       setFormData({
-        name: leadData.name || '',
-        company: leadData.company || '',
-        email: leadData.email || '',
+        name: leadData.contact_name || '',
+        company: leadData.company_name || '',
+        email: leadData.contact_email || '',
         phone: leadData.phone || '',
-        status: leadData.status || 'cold',
-        source: leadData.source || 'website',
-        value: leadData.value || '',
+        status: leadData.enquiry_status || 'New',
+        source: leadData.enquiry_type || 'Email',
+        value: leadData.estimated_value || '',
         assigned_to: leadData.assigned_to || '',
-        description: leadData.description || '',
+        description: leadData.project_description || '',
         address: leadData.address || '',
         city: leadData.city || '',
         state: leadData.state || '',
@@ -102,8 +102,8 @@ export default function EditLeadPage() {
         industry: leadData.industry || '',
         website: leadData.website || '',
         lead_score: leadData.lead_score || 0,
-        next_follow_up: leadData.next_follow_up ? leadData.next_follow_up.split('T')[0] : '',
-        notes: leadData.notes || '',
+        next_follow_up: leadData.followup1_date ? leadData.followup1_date.split('T')[0] : '',
+        notes: leadData.followup1_description || '',
         tags: leadData.tags || ''
       });
     } catch (error) {
@@ -170,9 +170,20 @@ export default function EditLeadPage() {
       const userData = localStorage.getItem('user');
       const currentUser = userData ? JSON.parse(userData) : null;
       
+      // Map form fields to database fields
       const updateData = {
-        ...formData,
-        value: parseFloat(formData.value) || 0,
+        contact_name: formData.name,
+        company_name: formData.company,
+        contact_email: formData.email,
+        phone: formData.phone,
+        enquiry_status: formData.status,
+        enquiry_type: formData.source,
+        estimated_value: parseFloat(formData.value) || 0,
+        assigned_to: formData.assigned_to,
+        project_description: formData.description,
+        city: formData.city,
+        followup1_date: formData.next_follow_up || null,
+        followup1_description: formData.notes,
         updated_by: currentUser?.id || null
       };
 

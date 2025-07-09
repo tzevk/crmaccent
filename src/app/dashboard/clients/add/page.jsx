@@ -41,10 +41,69 @@ export default function AddClient() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Implement client creation API call
-    console.log('Client data:', formData);
+    setIsSubmitting(true);
+    setError('');
+    setSuccess('');
+    
+    try {
+      // Format data for the API
+      const clientData = {
+        name: formData.companyName,
+        contact_name: formData.contactPerson,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        industry: formData.industry,
+        website: formData.website,
+        notes: formData.notes,
+        created_by: user.id
+      };
+      
+      const response = await fetch('/api/clients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(clientData),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create client');
+      }
+      
+      setSuccess('Client created successfully!');
+      
+      // Clear form after successful submission
+      setFormData({
+        companyName: '',
+        contactPerson: '',
+        email: '',
+        phone: '',
+        address: '',
+        industry: '',
+        website: '',
+        notes: ''
+      });
+      
+      // Redirect to clients list after 2 seconds
+      setTimeout(() => {
+        router.push('/dashboard/clients');
+      }, 2000);
+      
+    } catch (err) {
+      console.error('Error creating client:', err);
+      setError(err.message || 'Failed to create client. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!user) {

@@ -40,15 +40,14 @@ async function handleGet(req, res) {
   let query = `
     SELECT 
       p.*,
-      u.first_name as manager_name,
-      u.last_name as manager_lastname,
-      l.name as lead_name,
-      l.company as lead_company,
+      CONCAT(u.first_name, ' ', u.last_name) as manager_name,
+      c.name as client_name,
+      c.name as company_name,
       (SELECT COUNT(*) FROM project_tasks pt WHERE pt.project_id = p.id) as total_tasks,
       (SELECT COUNT(*) FROM project_tasks pt WHERE pt.project_id = p.id AND pt.status = 'completed') as completed_tasks
     FROM projects p
     LEFT JOIN users u ON p.project_manager_id = u.id
-    LEFT JOIN leads l ON p.lead_id = l.id
+    LEFT JOIN companies c ON p.client_id = c.id
     WHERE 1=1
   `;
   
@@ -66,9 +65,9 @@ async function handleGet(req, res) {
   }
 
   if (search) {
-    query += ' AND (p.name LIKE ? OR p.description LIKE ? OR l.name LIKE ? OR l.company LIKE ?)';
+    query += ' AND (p.name LIKE ? OR p.description LIKE ? OR c.name LIKE ?)';
     const searchPattern = `%${search}%`;
-    params.push(searchPattern, searchPattern, searchPattern, searchPattern);
+    params.push(searchPattern, searchPattern, searchPattern);
   }
 
   // Add sorting
@@ -92,7 +91,7 @@ async function handleGet(req, res) {
   let countQuery = `
     SELECT COUNT(*) as total
     FROM projects p
-    LEFT JOIN leads l ON p.lead_id = l.id
+    LEFT JOIN companies c ON p.client_id = c.id
     WHERE 1=1
   `;
   
@@ -106,9 +105,9 @@ async function handleGet(req, res) {
     countParams.push(priority);
   }
   if (search) {
-    countQuery += ' AND (p.name LIKE ? OR p.description LIKE ? OR l.name LIKE ? OR l.company LIKE ?)';
+    countQuery += ' AND (p.name LIKE ? OR p.description LIKE ? OR c.name LIKE ?)';
     const searchPattern = `%${search}%`;
-    countParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
+    countParams.push(searchPattern, searchPattern, searchPattern);
   }
 
   const countResult = await executeQuery(countQuery, countParams);
@@ -143,8 +142,12 @@ async function handlePost(req, res) {
     team_members,
     tags,
     notes,
-    created_by
+    created_by,
+    project_number // Optional - will be generated if not provided
   } = req.body;
+  
+  // Generate a unique project number if not provided
+  const generatedProjectNumber = project_number || `PROJ-${Date.now().toString().slice(-6)}`;
 
   // Validation
   if (!name) {
@@ -153,12 +156,13 @@ async function handlePost(req, res) {
 
   const query = `
     INSERT INTO projects (
-      name, description, client_id, lead_id, status, priority, start_date, end_date,
+      project_number, name, description, client_id, lead_id, status, priority, start_date, end_date,
       estimated_hours, budget, project_manager_id, team_members, tags, notes, created_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const params = [
+    generatedProjectNumber,
     name, 
     description || null, 
     client_id || null,

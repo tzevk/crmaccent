@@ -50,18 +50,26 @@ async function handleGet(req, res, id) {
   const lead = leadResult[0];
 
   // Get lead activities
-  const activitiesQuery = `
-    SELECT 
-      la.*,
-      u.first_name as created_by_name,
-      u.last_name as created_by_lastname
-    FROM lead_activities la
-    LEFT JOIN users u ON la.created_by = u.id
-    WHERE la.lead_id = ?
-    ORDER BY la.activity_date DESC
-  `;
+  let activities = [];
+  
+  try {
+    const activitiesQuery = `
+      SELECT 
+        la.*,
+        u.first_name as created_by_name,
+        u.last_name as created_by_lastname
+      FROM lead_activities la
+      LEFT JOIN users u ON la.created_by = u.id
+      WHERE la.lead_id = ?
+      ORDER BY la.activity_date DESC
+    `;
 
-  const activities = await executeQuery(activitiesQuery, [id]);
+    activities = await executeQuery(activitiesQuery, [id]);
+  } catch (error) {
+    console.log('Note: Lead activities could not be fetched, table might not exist yet:', error.message);
+    // Don't fail the whole request if just the activities part fails
+    // Instead, return an empty activities array
+  }
 
   return res.status(200).json({
     lead,

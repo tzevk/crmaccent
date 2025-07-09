@@ -166,20 +166,20 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Hot Leads */}
+          {/* Conversion Rate */}
           <div className="bg-white rounded-xl p-6 shadow-lg border-l-4 transition-all duration-300 hover:shadow-xl" 
                style={{ borderLeftColor: '#c084fc' }}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium" style={{ color: '#86288F' }}>Hot Leads</p>
-                <p className="text-3xl font-bold" style={{ color: '#64126D' }}>0</p>
+                <p className="text-sm font-medium" style={{ color: '#86288F' }}>Conversion Rate</p>
+                <p className="text-3xl font-bold" style={{ color: '#64126D' }}>0%</p>
                 <div className="flex items-center mt-2">
-                  <AlertTriangle className="w-4 h-4 text-red-500 mr-1" />
-                  <span className="text-sm text-red-500">Need attention</span>
+                  <BarChart3 className="w-4 h-4 text-purple-500 mr-1" />
+                  <span className="text-sm text-purple-500">This quarter</span>
                 </div>
               </div>
               <div className="p-4 rounded-full" style={{ backgroundColor: '#f3e8ff' }}>
-                <AlertTriangle className="w-8 h-8" style={{ color: '#c084fc' }} />
+                <TrendingUp className="w-8 h-8" style={{ color: '#c084fc' }} />
               </div>
             </div>
           </div>

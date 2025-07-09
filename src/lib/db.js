@@ -17,12 +17,9 @@ const dbConfig = {
 export async function executeQuery(query, params = []) {
   let connection;
   try {
-    console.log('Creating database connection...');
     connection = await mysql.createConnection(dbConfig);
-    console.log('Database connection established');
     
     const [results] = await connection.execute(query, params);
-    console.log('Query executed successfully');
     return results;
   } catch (error) {
     console.error('Database query error:', error);
@@ -37,7 +34,6 @@ export async function executeQuery(query, params = []) {
   } finally {
     if (connection) {
       await connection.end();
-      console.log('Database connection closed');
     }
   }
 }

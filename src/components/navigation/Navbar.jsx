@@ -29,24 +29,20 @@ const navItems = [
   key: 'masters',
   icon: LayoutList,
   children: [
-    { label: 'Masters Overview', href: '/dashboard/masters' },
-    { label: 'Disciplines', href: '/dashboard/masters/disciplines' },
-    { label: 'Employees', href: '/dashboard/masters/employees' },
-    { label: 'Activities', href: '/dashboard/masters/activities' },
-    { label: 'Inquiries', href: '/dashboard/masters/inquiries' },
-    { label: 'Project Scopes', href: '/dashboard/masters/project-scopes' },
-    { label: 'Salaries', href: '/dashboard/masters/salaries' }
+    { label: 'Users Master', href: '/dashboard/masters/users' },
+    { label: 'Project Master', href: '/dashboard/masters/projects' },
+    { label: 'Leads Master', href: '/dashboard/masters/lead-sources' },
   ]
 },
 
   {
-    label: 'Clients',
-    key: 'clients',
+    label: 'Companies',
+    key: 'companies',
     icon: Building2,
     children: [
-      { label: 'All Clients', href: '/dashboard/clients' },
-      { label: 'Add Client', href: '/dashboard/clients/add' },
-      { label: 'Outreach Tracker', href: '/dashboard/clients/outreach' }
+      { label: 'All Companies', href: '/dashboard/companies' },
+      { label: 'Add Company', href: '/dashboard/companies/add' },
+      { label: 'Outreach Tracker', href: '/dashboard/companies/outreach' }
     ]
   },
   {
@@ -55,9 +51,7 @@ const navItems = [
     icon: Briefcase,
     children: [
       { label: 'All Projects', href: '/dashboard/projects' },
-      { label: 'Add Project', href: '/dashboard/projects/add' },
       { label: 'Task Manager', href: '/dashboard/projects/tasks' },
-      { label: 'Add Task', href: '/dashboard/projects/tasks/add' },
       { label: 'Manhours Tracker', href: '/dashboard/projects/manhours' }
     ]
   },

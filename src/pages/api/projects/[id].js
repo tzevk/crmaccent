@@ -20,7 +20,6 @@ export default async function handler(req, res) {
         return res.status(405).json({ message: 'Method not allowed' });
     }
   } catch (error) {
-    console.error('Project API Error:', error);
     return res.status(500).json({ 
       message: 'Internal server error', 
       error: error.message 
@@ -36,9 +35,9 @@ async function handleGet(req, res, id) {
       p.*,
       u.first_name as manager_name,
       u.last_name as manager_lastname,
-      l.name as lead_name,
-      l.company as lead_company,
-      l.email as lead_email,
+      l.contact_name as lead_name,
+      l.company_name as lead_company,
+      l.contact_email as lead_email,
       creator.first_name as created_by_name,
       creator.last_name as created_by_lastname
     FROM projects p
@@ -70,13 +69,29 @@ async function handleGet(req, res, id) {
   // Get project tasks
   const tasksQuery = `
     SELECT 
-      pt.*,
+      pt.id,
+      pt.project_id,
+      pt.task_name as title,
+      pt.description,
+      pt.status,
+      pt.priority,
+      pt.assigned_to,
+      pt.start_date,
+      pt.due_date,
+      pt.completed_date,
+      pt.estimated_hours,
+      pt.actual_hours,
+      pt.progress_percentage,
+      pt.parent_task_id,
+      pt.created_by,
+      pt.created_at,
+      pt.updated_at,
       u.first_name as assigned_to_name,
       u.last_name as assigned_to_lastname
     FROM project_tasks pt
     LEFT JOIN users u ON pt.assigned_to = u.id
     WHERE pt.project_id = ?
-    ORDER BY pt.order_index ASC, pt.created_at DESC
+    ORDER BY pt.created_at DESC
   `;
 
   const tasks = await executeQuery(tasksQuery, [id]);
@@ -87,7 +102,7 @@ async function handleGet(req, res, id) {
       pa.*,
       u.first_name as created_by_name,
       u.last_name as created_by_lastname,
-      pt.title as task_title
+      pt.task_name as task_title
     FROM project_activities pa
     LEFT JOIN users u ON pa.created_by = u.id
     LEFT JOIN project_tasks pt ON pa.task_id = pt.id

@@ -26,12 +26,12 @@ import {
 // Import components
 import Navbar from '../../../../components/navigation/Navbar.jsx';
 // Import API utility
-import { leadsAPI, leadUtils } from '../../../../utils/leadsAPI.js';
+import { leadsAPI as leadAPI, leadUtils } from '../../../../utils/leadsAPI.js';
 
 export default function LeadDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const leadId = params.id;
+  const leadId = params?.id; // Using optional chaining to avoid errors
   
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,9 +58,18 @@ export default function LeadDetailPage() {
       setIsLoading(true);
       setError(null);
       
-      const response = await leadsAPI.getById(leadId);
-      setLead(response.lead);
-      setActivities(response.activities || []);
+      const response = await leadAPI.getById(leadId);
+      setLead(response);
+      
+      // Fetch activities for this lead if any
+      try {
+        const activitiesResponse = await leadAPI.getActivities(leadId);
+        setActivities(activitiesResponse.activities || []);
+      } catch (activitiesError) {
+        console.error('Error loading lead activities:', activitiesError);
+        // Don't fail the whole page if just activities fail to load
+        setActivities([]);
+      }
     } catch (error) {
       console.error('Error loading lead details:', error);
       setError('Failed to load lead details. Please try again.');
@@ -72,11 +81,15 @@ export default function LeadDetailPage() {
   const handleDeleteLead = async () => {
     if (confirm('Are you sure you want to delete this lead? This action cannot be undone.')) {
       try {
-        await leadsAPI.delete(leadId);
+        setIsLoading(true);
+        await leadAPI.delete(leadId);
+        // Show a brief success message before redirecting
+        alert('Lead successfully deleted.');
         router.push('/dashboard/leads');
       } catch (error) {
         console.error('Error deleting lead:', error);
         alert('Failed to delete lead. Please try again.');
+        setIsLoading(false);
       }
     }
   };
@@ -135,32 +148,49 @@ export default function LeadDetailPage() {
             
             <div className="flex gap-3">
               <Link
-                href={`/dashboard/leads/edit/${leadId}`}
+                href={`/dashboard/leads/${leadId}/edit`}
                 className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
                 <Edit className="w-4 h-4 mr-2" />
                 Edit Lead
               </Link>
               <button
-                onClick={handleDeleteLead}
-                className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                onClick={() => router.push(`/dashboard/leads/${leadId}/convert-to-project`)}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
+                <DollarSign className="w-4 h-4 mr-2" />
+                Convert to Project
+              </button>
+              <button
+                onClick={handleDeleteLead}
+                disabled={isLoading}
+                className={`inline-flex items-center px-4 py-2 ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'} text-white rounded-lg transition-colors`}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </>
+                )}
               </button>
             </div>
           </div>
           
           <div className="flex items-center gap-4 mb-4">
             <h1 className="text-3xl font-bold" style={{ color: '#64126D' }}>
-              {lead.name}
+              {lead.contact_name || 'N/A'}
             </h1>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium border ${leadUtils.getStatusColor(lead.status)}`}>
-              {lead.status.charAt(0).toUpperCase() + lead.status.slice(1)}
+            <span className={`px-3 py-1 rounded-full text-sm font-medium border ${leadUtils.getStatusColor(lead.enquiry_status || 'New')}`}>
+              {(lead.enquiry_status || 'New').charAt(0).toUpperCase() + (lead.enquiry_status || 'New').slice(1)}
             </span>
           </div>
           
-          <p className="text-gray-600">{lead.company}</p>
+          <p className="text-gray-600">{lead.company_name || 'N/A'}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -178,7 +208,7 @@ export default function LeadDetailPage() {
                   <Mail className="w-5 h-5 text-gray-400 mr-3" />
                   <div>
                     <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium">{lead.email || 'Not provided'}</p>
+                    <p className="font-medium">{lead.contact_email || 'Not provided'}</p>
                   </div>
                 </div>
                 
@@ -186,7 +216,7 @@ export default function LeadDetailPage() {
                   <Phone className="w-5 h-5 text-gray-400 mr-3" />
                   <div>
                     <p className="text-sm text-gray-500">Phone</p>
-                    <p className="font-medium">{lead.phone || 'Not provided'}</p>
+                    <p className="font-medium">Not provided</p>
                   </div>
                 </div>
                 
@@ -194,7 +224,7 @@ export default function LeadDetailPage() {
                   <Building className="w-5 h-5 text-gray-400 mr-3" />
                   <div>
                     <p className="text-sm text-gray-500">Company</p>
-                    <p className="font-medium">{lead.company || 'Not provided'}</p>
+                    <p className="font-medium">{lead.company_name || 'Not provided'}</p>
                   </div>
                 </div>
                 
@@ -202,18 +232,7 @@ export default function LeadDetailPage() {
                   <Globe className="w-5 h-5 text-gray-400 mr-3" />
                   <div>
                     <p className="text-sm text-gray-500">Website</p>
-                    {lead.website ? (
-                      <a 
-                        href={lead.website} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="font-medium text-purple-600 hover:text-purple-800"
-                      >
-                        {lead.website}
-                      </a>
-                    ) : (
-                      <p className="font-medium">Not provided</p>
-                    )}
+                    <p className="font-medium">Not provided</p>
                   </div>
                 </div>
               </div>
@@ -228,26 +247,25 @@ export default function LeadDetailPage() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-sm text-gray-500">Source</p>
+                  <p className="text-sm text-gray-500">Enquiry Type</p>
                   <p className="font-medium flex items-center">
-                    <span className="mr-2">{leadUtils.getSourceIcon(lead.source)}</span>
-                    {lead.source.replace('_', ' ').charAt(0).toUpperCase() + lead.source.replace('_', ' ').slice(1)}
+                    <span className="mr-2">{leadUtils.getSourceIcon(lead.enquiry_type || 'Email')}</span>
+                    {(lead.enquiry_type || 'Email').replace('_', ' ').charAt(0).toUpperCase() + (lead.enquiry_type || 'Email').replace('_', ' ').slice(1)}
                   </p>
                 </div>
                 
                 <div>
-                  <p className="text-sm text-gray-500">Value</p>
-                  <p className="font-medium text-green-600">
-                    {leadUtils.formatCurrency(lead.value)}
+                  <p className="text-sm text-gray-500">Project Description</p>
+                  <p className="font-medium">
+                    {lead.project_description || 'Not provided'}
                   </p>
                 </div>
                 
                 <div>
-                  <p className="text-sm text-gray-500">Lead Score</p>
-                  <div className="flex items-center">
-                    <Star className="w-4 h-4 text-yellow-500 mr-1" />
-                    <span className="font-medium">{lead.lead_score}/100</span>
-                  </div>
+                  <p className="text-sm text-gray-500">Project Status</p>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium border ${leadUtils.getStatusColor(lead.project_status || 'Open', 'project')}`}>
+                    {(lead.project_status || 'Open').charAt(0).toUpperCase() + (lead.project_status || 'Open').slice(1)}
+                  </span>
                 </div>
                 
                 <div>

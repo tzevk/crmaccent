@@ -21,18 +21,15 @@ import {
 
 // Import components
 import Navbar from '../../../../components/navigation/Navbar.jsx';
-// Import API utilities
-import leadsAPI from '../../../../utils/leadsAPI.js';
 
 export default function AddLeadPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [companiesLoading, setCompaniesLoading] = useState(true);
   const [companies, setCompanies] = useState([]);
   const [formData, setFormData] = useState({
-    sr_no: '', // Will be auto-generated
-    enquiry_no: '', // Will be auto-generated
+    sr_no: '',
+    enquiry_no: '',
     year: new Date().getFullYear(),
     company_name: '',
     type: 'New',
@@ -63,22 +60,6 @@ export default function AddLeadPage() {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
       fetchCompanies();
-      
-      // Generate serial number and enquiry number
-      const currentYear = new Date().getFullYear();
-      const enquiryNo = leadsAPI.generateEnquiryNumber(currentYear);
-      
-      // Generate a random SR number between 1000-9999
-      const srNo = Math.floor(1000 + Math.random() * 9000);
-      
-      // Update form data with generated numbers
-      setFormData(prev => ({
-        ...prev,
-        sr_no: srNo,
-        enquiry_no: enquiryNo,
-        year: currentYear
-      }));
-      
     } else {
       router.push('/');
     }
@@ -86,29 +67,11 @@ export default function AddLeadPage() {
 
   const fetchCompanies = async () => {
     try {
-      setCompaniesLoading(true);
       const response = await fetch('/api/companies');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
       const data = await response.json();
-      
-      // Handle different response structures
-      let companiesArray = [];
-      if (data.companies && Array.isArray(data.companies)) {
-        companiesArray = data.companies;
-      } else if (Array.isArray(data)) {
-        companiesArray = data;
-      }
-      
-      setCompanies(companiesArray);
+      setCompanies(data.companies || []);
     } catch (error) {
       console.error('Error fetching companies:', error);
-      setCompanies([]);
-    } finally {
-      setCompaniesLoading(false);
     }
   };
 
@@ -125,23 +88,25 @@ export default function AddLeadPage() {
   const validateForm = () => {
     const newErrors = {};
 
-    // Enquiry number validation removed as it's auto-generated
+    if (!formData.enquiry_no.trim()) {
+      newErrors.enquiry_no = 'Enquiry number is required';
+    }
 
-    if (!formData.company_name?.trim()) {
+    if (!formData.company_name.trim()) {
       newErrors.company_name = 'Company name is required';
     }
 
-    if (!formData.contact_name?.trim()) {
+    if (!formData.contact_name.trim()) {
       newErrors.contact_name = 'Contact name is required';
     }
 
-    if (!formData.contact_email?.trim()) {
+    if (!formData.contact_email.trim()) {
       newErrors.contact_email = 'Contact email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.contact_email)) {
+    } else if (!/\\S+@\\S+\\.\\S+/.test(formData.contact_email)) {
       newErrors.contact_email = 'Please enter a valid email address';
     }
 
-    if (!formData.project_description?.trim()) {
+    if (!formData.project_description.trim()) {
       newErrors.project_description = 'Project description is required';
     }
 
@@ -182,28 +147,6 @@ export default function AddLeadPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleExport = () => {
-    if (leads.length === 0) {
-      alert('No leads to export');
-      return;
-    }
-
-    // Generate CSV export with the new schema fields
-    const csvContent = "data:text/csv;charset=utf-8," + 
-      "Sr No,Enquiry No,Year,Company Name,Type,City,Enquiry Date,Enquiry Type,Contact Name,Contact Email,Project Description,Enquiry Status,Project Status\n" +
-      filteredLeads.map(lead => 
-        `"${lead.sr_no || ''}","${lead.enquiry_no || ''}","${lead.year || ''}","${lead.company_name || ''}","${lead.type || ''}","${lead.city || ''}","${lead.enquiry_date || ''}","${lead.enquiry_type || ''}","${lead.contact_name || ''}","${lead.contact_email || ''}","${lead.project_description || ''}","${lead.enquiry_status || ''}","${lead.project_status || ''}"`
-      ).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `leads_export_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   if (!user) {
@@ -250,31 +193,32 @@ export default function AddLeadPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Hash size={16} className="inline mr-1" />
-                  Serial Number (Auto-generated)
+                  Serial Number
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   name="sr_no"
                   value={formData.sr_no}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Enter serial number"
                 />
-                <p className="text-xs text-gray-500 mt-1">Automatically generated</p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Hash size={16} className="inline mr-1" />
-                  Enquiry Number (Auto-generated)
+                  Enquiry Number *
                 </label>
                 <input
                   type="text"
                   name="enquiry_no"
                   value={formData.enquiry_no}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
+                  onChange={handleInputChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent \${errors.enquiry_no ? 'border-red-500' : 'border-gray-300'}`}
+                  placeholder="Enter enquiry number"
                 />
-                <p className="text-xs text-gray-500 mt-1">Automatically generated</p>
+                {errors.enquiry_no && <p className="text-red-500 text-sm mt-1">{errors.enquiry_no}</p>}
               </div>
 
               <div>
@@ -304,17 +248,11 @@ export default function AddLeadPage() {
                   name="company_name"
                   value={formData.company_name}
                   onChange={handleInputChange}
-                  disabled={companiesLoading}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${errors.company_name ? 'border-red-500' : 'border-gray-300'} ${companiesLoading ? 'bg-gray-100' : ''}`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent \${errors.company_name ? 'border-red-500' : 'border-gray-300'}`}
                 >
-                  <option value="">
-                    {companiesLoading 
-                      ? 'Loading companies...' 
-                      : `Select a company (${companies.length} available)`
-                    }
-                  </option>
-                  {!companiesLoading && companies.map((company) => (
-                    <option key={company.id || company.name} value={company.name}>
+                  <option value="">Select a company</option>
+                  {companies.map((company) => (
+                    <option key={company.id} value={company.name}>
                       {company.name}
                     </option>
                   ))}

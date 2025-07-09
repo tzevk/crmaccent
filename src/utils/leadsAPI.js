@@ -1,8 +1,36 @@
-// API utility functions for leads
+// API utility functions for leads management with updated schema support
 
 const API_BASE_URL = '/api/leads';
+const COMPANIES_API_URL = '/api/companies';
 
-// Generic API request handler
+// Constants for validation and dropdown options
+const leadConstants = {
+  TYPES: ['New', 'Existing', 'Renewal'],
+  
+  ENQUIRY_TYPES: [
+    'Reference',
+    'Exhibition',
+    'Existing Company',
+    'Enquiry',
+    'Email',
+    'Site visit',
+    'Call',
+    'Website',
+    'Indiamart',
+    'Justdial',
+    'Social Media',
+    'GEM',
+    'Projects Today',
+    'Tender Tiger',
+    'Other'
+  ],
+  
+  ENQUIRY_STATUSES: ['New', 'Working', 'Quoted', 'Won', 'Lost', 'Follow-up'],
+  
+  PROJECT_STATUSES: ['Open', 'Active', 'On Hold', 'Closed', 'Cancelled']
+};
+
+// Generic API request handler with improved error handling
 async function apiRequest(url, options = {}) {
   const config = {
     headers: {
@@ -12,13 +40,17 @@ async function apiRequest(url, options = {}) {
     ...options,
   };
 
-  if (config.body && typeof config.body === 'object') {
-    config.body = JSON.stringify(config.body);
-  }
-
   try {
     const response = await fetch(url, config);
-    const data = await response.json();
+    
+    // Handle non-JSON responses
+    let data;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = { message: await response.text() };
+    }
 
     if (!response.ok) {
       throw new Error(data.message || `HTTP error! status: ${response.status}`);
@@ -26,206 +58,394 @@ async function apiRequest(url, options = {}) {
 
     return data;
   } catch (error) {
-    console.error('API request failed:', error);
+    console.error('API Request Error:', error);
     throw error;
   }
 }
 
-// Leads API functions
+// Lead API functions
 export const leadsAPI = {
-  // Get all leads with optional filters
-  getAll: async (filters = {}) => {
+  // Generate enquiry number with better format
+  generateEnquiryNumber(year = new Date().getFullYear()) {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    return `${year.toString().slice(-2)}${timestamp.toString().slice(-6)}${random.toString().padStart(3, '0')}`;
+  },
+
+  // Get all leads with optional filtering and pagination
+  async getAll(params = {}) {
     const queryParams = new URLSearchParams();
     
-    Object.keys(filters).forEach(key => {
-      if (filters[key] !== undefined && filters[key] !== '') {
-        queryParams.append(key, filters[key]);
-      }
-    });
+    // Add all supported query parameters from the new schema
+    if (params.enquiry_status) queryParams.append('enquiry_status', params.enquiry_status);
+    if (params.project_status) queryParams.append('project_status', params.project_status);
+    if (params.company_name) queryParams.append('company_name', params.company_name);
+    if (params.enquiry_type) queryParams.append('enquiry_type', params.enquiry_type);
+    if (params.type) queryParams.append('type', params.type);
+    if (params.city) queryParams.append('city', params.city);
+    if (params.contact_name) queryParams.append('contact_name', params.contact_name);
+    if (params.contact_email) queryParams.append('contact_email', params.contact_email);
+    if (params.search) queryParams.append('search', params.search);
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+    if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+    if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+    if (params.year) queryParams.append('year', params.year);
+    if (params.followup_required) queryParams.append('followup_required', params.followup_required);
 
-    const url = queryParams.toString() 
-      ? `${API_BASE_URL}?${queryParams.toString()}`
-      : API_BASE_URL;
-
-    return apiRequest(url);
+    const url = `${API_BASE_URL}?${queryParams.toString()}`;
+    return await apiRequest(url);
   },
 
-  // Get a single lead by ID
-  getById: async (id) => {
-    return apiRequest(`${API_BASE_URL}/${id}`);
+  // Get lead by ID
+  async getById(id) {
+    try {
+      const result = await apiRequest(`${API_BASE_URL}/${id}`);
+      return result;
+    } catch (error) {
+      console.error(`Error fetching lead with ID ${id}:`, error);
+      throw error;
+    }
   },
 
-  // Create a new lead
-  create: async (leadData) => {
-    return apiRequest(API_BASE_URL, {
+  // Create new lead
+  async create(leadData) {
+    return await apiRequest(API_BASE_URL, {
       method: 'POST',
-      body: leadData,
+      body: JSON.stringify(leadData),
     });
   },
 
-  // Update a lead
-  update: async (id, leadData) => {
-    return apiRequest(`${API_BASE_URL}/${id}`, {
+  // Update lead
+  async update(id, leadData) {
+    return await apiRequest(`${API_BASE_URL}/${id}`, {
       method: 'PUT',
-      body: leadData,
+      body: JSON.stringify(leadData),
     });
   },
 
-  // Delete a lead
-  delete: async (id) => {
-    return apiRequest(`${API_BASE_URL}/${id}`, {
+  // Delete lead
+  async delete(id) {
+    return await apiRequest(`${API_BASE_URL}/${id}`, {
       method: 'DELETE',
     });
+  },
+
+  async getLeads(params = {}) {
+    return await this.getAll(params);
   },
 
   // Get lead statistics
-  getStats: async () => {
-    return apiRequest(`${API_BASE_URL}/stats`);
+  async getStats() {
+    return await apiRequest(`${API_BASE_URL}/stats`);
   },
 
-  // Get lead activities
-  getActivities: async (leadId = null, limit = 50) => {
-    const queryParams = new URLSearchParams({ limit: limit.toString() });
-    if (leadId) {
-      queryParams.append('lead_id', leadId);
+  // Get lead activities for a specific lead
+  async getActivities(leadId) {
+    try {
+      return await apiRequest(`${API_BASE_URL}/${leadId}/activities`);
+    } catch (error) {
+      console.error(`Error fetching activities for lead ${leadId}:`, error);
+      // Return empty activities array to avoid breaking UI
+      return { activities: [] };
     }
-    
-    return apiRequest(`${API_BASE_URL}/activities?${queryParams.toString()}`);
   },
 
-  // Create a lead activity
-  createActivity: async (activityData) => {
-    return apiRequest(`${API_BASE_URL}/activities`, {
+  // Add activity to lead
+  async addActivity(leadId, activityData) {
+    return await apiRequest(`${API_BASE_URL}/${leadId}/activities`, {
       method: 'POST',
-      body: activityData,
+      body: JSON.stringify(activityData),
     });
   },
 
-  // Get lead sources
-  getSources: async (activeOnly = true) => {
-    const queryParams = new URLSearchParams({ 
-      active_only: activeOnly.toString() 
-    });
-    
-    return apiRequest(`${API_BASE_URL}/sources?${queryParams.toString()}`);
-  },
-
-  // Create a lead source
-  createSource: async (sourceData) => {
-    return apiRequest(`${API_BASE_URL}/sources`, {
-      method: 'POST',
-      body: sourceData,
-    });
-  },
-
-  // Update a lead source
-  updateSource: async (sourceData) => {
-    return apiRequest(`${API_BASE_URL}/sources`, {
+  // Update lead status
+  async updateStatus(id, status) {
+    return await apiRequest(`${API_BASE_URL}/${id}/status`, {
       method: 'PUT',
-      body: sourceData,
+      body: JSON.stringify(typeof status === 'string' ? { status } : status),
     });
   },
 
-  // Delete a lead source
-  deleteSource: async (id) => {
-    return apiRequest(`${API_BASE_URL}/sources?id=${id}`, {
-      method: 'DELETE',
+  // Convert lead to project
+  async convertToProject(id, projectData) {
+    return await apiRequest(`${API_BASE_URL}/${id}/convert`, {
+      method: 'POST',
+      body: JSON.stringify(projectData),
     });
+  },
+
+  // Add follow-up to lead
+  async addFollowUp(id, followUpData) {
+    return await apiRequest(`${API_BASE_URL}/${id}/followup`, {
+      method: 'POST',
+      body: JSON.stringify(followUpData),
+    });
+  },
+
+  // Search leads by company name
+  async searchByCompany(companyName) {
+    return await apiRequest(`${API_BASE_URL}?company_name=${encodeURIComponent(companyName)}`);
+  },
+
+  // Get leads by enquiry status
+  async getByEnquiryStatus(status) {
+    return await apiRequest(`${API_BASE_URL}?enquiry_status=${encodeURIComponent(status)}`);
+  },
+
+  // Get leads by project status
+  async getByProjectStatus(status) {
+    return await apiRequest(`${API_BASE_URL}?project_status=${encodeURIComponent(status)}`);
+  },
+
+  // Get leads by year
+  async getByYear(year) {
+    return await apiRequest(`${API_BASE_URL}?year=${year}`);
+  },
+
+  // Get leads requiring follow-up
+  async getFollowUpRequired() {
+    return await apiRequest(`${API_BASE_URL}?followup_required=true`);
+  },
+
+  // Bulk update leads
+  async bulkUpdate(leadIds, updateData) {
+    return await apiRequest(`${API_BASE_URL}/bulk-update`, {
+      method: 'PUT',
+      body: JSON.stringify({ leadIds, updateData }),
+    });
+  },
+
+  // Export leads
+  async export(params = {}) {
+    const queryParams = new URLSearchParams(params);
+    return await apiRequest(`${API_BASE_URL}/export?${queryParams.toString()}`);
+  },
+
+  // Get all companies for dropdown
+  async getCompanies() {
+    return await apiRequest(COMPANIES_API_URL);
+  },
+
+  // Search companies
+  async searchCompanies(searchTerm) {
+    return await apiRequest(`${COMPANIES_API_URL}?search=${encodeURIComponent(searchTerm)}`);
+  },
+
+  // Get leads by date range
+  async getByDateRange(startDate, endDate) {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    return await apiRequest(`${API_BASE_URL}?${params.toString()}`);
+  },
+
+  // Get recent leads (last 30 days)
+  async getRecent(limit = 10) {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return await apiRequest(`${API_BASE_URL}?start_date=${thirtyDaysAgo.toISOString().split('T')[0]}&limit=${limit}&sortBy=created_at&sortOrder=DESC`);
+  },
+
+  // Update multiple fields of a lead
+  async updateFields(id, fields) {
+    return await apiRequest(`${API_BASE_URL}/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(fields),
+    });
+  },
+
+  // Clone/duplicate a lead
+  async clone(id, modifications = {}) {
+    const original = await this.getById(id);
+    const { id: _, created_at, updated_at, enquiry_no, ...leadData } = original.lead || original;
+    
+    // Generate new enquiry number
+    const newEnquiryNo = this.generateEnquiryNumber();
+    
+    const newLead = {
+      ...leadData,
+      enquiry_no: newEnquiryNo,
+      enquiry_status: 'New',
+      project_status: 'Open',
+      ...modifications
+    };
+
+    return await this.create(newLead);
   }
 };
 
-// Utility functions for form handling
+
+// API Health and Setup utilities
+export const apiUtils = {
+  // Check API health
+  async checkHealth() {
+    try {
+      const [leadsResponse, companiesResponse, statsResponse] = await Promise.allSettled([
+        apiRequest(`${API_BASE_URL}?limit=1`),
+        apiRequest(COMPANIES_API_URL),
+        apiRequest(`${API_BASE_URL}/stats`)
+      ]);
+
+      return {
+        leads: leadsResponse.status === 'fulfilled',
+        companies: companiesResponse.status === 'fulfilled',
+        stats: statsResponse.status === 'fulfilled',
+        overall: leadsResponse.status === 'fulfilled' && 
+                companiesResponse.status === 'fulfilled' && 
+                statsResponse.status === 'fulfilled'
+      };
+    } catch (error) {
+      console.error('API Health Check Error:', error);
+      return {
+        leads: false,
+        companies: false,
+        stats: false,
+        overall: false,
+        error: error.message
+      };
+    }
+  },
+
+  // Setup database tables (calls setup endpoints)
+  async setupDatabase() {
+    try {
+      const [companiesSetup, leadsSetup] = await Promise.allSettled([
+        apiRequest('/api/setup-companies-db'),
+        apiRequest('/api/setup-updated-leads-db')
+      ]);
+
+      return {
+        companies: companiesSetup.status === 'fulfilled' ? companiesSetup.value : companiesSetup.reason,
+        leads: leadsSetup.status === 'fulfilled' ? leadsSetup.value : leadsSetup.reason,
+        success: companiesSetup.status === 'fulfilled' && leadsSetup.status === 'fulfilled'
+      };
+    } catch (error) {
+      console.error('Database Setup Error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+
+  // Validate API endpoints
+  async validateEndpoints() {
+    const endpoints = [
+      { name: 'Get Leads', url: `${API_BASE_URL}?limit=1` },
+      { name: 'Get Companies', url: COMPANIES_API_URL },
+      { name: 'Get Stats', url: `${API_BASE_URL}/stats` }
+    ];
+
+    const results = {};
+
+    for (const endpoint of endpoints) {
+      try {
+        await apiRequest(endpoint.url);
+        results[endpoint.name] = { status: 'success', error: null };
+      } catch (error) {
+        results[endpoint.name] = { status: 'error', error: error.message };
+      }
+    }
+
+    return results;
+  }
+};
+
+// Export utility functions for dealing with lead UI elements
 export const leadUtils = {
-  // Validate lead data before submission
-  validateLead: (leadData) => {
-    const errors = {};
-
-    if (!leadData.name || leadData.name.trim() === '') {
-      errors.name = 'Name is required';
-    }
-
-    if (leadData.email && !isValidEmail(leadData.email)) {
-      errors.email = 'Please enter a valid email address';
-    }
-
-    if (leadData.phone && !isValidPhone(leadData.phone)) {
-      errors.phone = 'Please enter a valid phone number';
-    }
-
-    if (leadData.value && isNaN(parseFloat(leadData.value))) {
-      errors.value = 'Value must be a valid number';
-    }
-
-    return {
-      isValid: Object.keys(errors).length === 0,
-      errors
-    };
-  },
-
-  // Format lead data for display
-  formatLead: (lead) => {
-    return {
-      ...lead,
-      value: parseFloat(lead.value || 0),
-      created_at: new Date(lead.created_at).toLocaleDateString(),
-      updated_at: new Date(lead.updated_at).toLocaleDateString(),
-      last_contact: lead.last_contact 
-        ? new Date(lead.last_contact).toLocaleDateString()
-        : null,
-      next_follow_up: lead.next_follow_up 
-        ? new Date(lead.next_follow_up).toLocaleDateString()
-        : null,
-    };
-  },
-
-  // Get status color for UI
-  getStatusColor: (status) => {
+  // Get status color based on status
+  getStatusColor(status, type = 'enquiry') {
+    // Normalize the status string
+    const normalizedStatus = typeof status === 'string' ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase() : 'Unknown';
+    
     const colors = {
-      hot: 'bg-red-100 text-red-800 border-red-200',
-      warm: 'bg-orange-100 text-orange-800 border-orange-200',
-      cold: 'bg-blue-100 text-blue-800 border-blue-200',
-      qualified: 'bg-purple-100 text-purple-800 border-purple-200',
-      converted: 'bg-green-100 text-green-800 border-green-200',
-      lost: 'bg-gray-100 text-gray-800 border-gray-200'
+      // Enquiry statuses
+      'New': 'bg-blue-100 text-blue-800 border-blue-200',
+      'Working': 'bg-purple-100 text-purple-800 border-purple-200',
+      'Quoted': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'Won': 'bg-green-100 text-green-800 border-green-200',
+      'Lost': 'bg-red-100 text-red-800 border-red-200',
+      'Follow-up': 'bg-orange-100 text-orange-800 border-orange-200',
+      'Converted': 'bg-teal-100 text-teal-800 border-teal-200',
+      
+      // Project statuses
+      'Open': 'bg-blue-100 text-blue-800 border-blue-200',
+      'Active': 'bg-green-100 text-green-800 border-green-200',
+      'On Hold': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      'Closed': 'bg-gray-100 text-gray-800 border-gray-200',
+      'Cancelled': 'bg-red-100 text-red-800 border-red-200'
     };
-    return colors[status] || colors.cold;
+    
+    return colors[normalizedStatus] || 'bg-gray-100 text-gray-500 border-gray-200';
   },
-
-  // Get source icon
-  getSourceIcon: (source) => {
-    const icons = {
-      website: '🌐',
-      referral: '👥',
-      cold_call: '📞',
-      social_media: '📱',
-      email_campaign: '📧',
-      trade_show: '🏢',
-      google_ads: '🔍',
-      linkedin: '💼',
-      other: '📝'
-    };
-    return icons[source] || icons.other;
+  
+  // Get source icon for UI display
+  getSourceIcon(source) {
+    switch (source?.toLowerCase()) {
+      case 'email': return '📧';
+      case 'phone': return '📞';
+      case 'call': return '📱';
+      case 'website': return '🌐';
+      case 'reference': return '👥';
+      case 'referral': return '👥';
+      case 'social media': return '📱';
+      case 'exhibition': return '🏢';
+      case 'existing company': return '🏛️';
+      case 'enquiry': return '❓';
+      case 'site visit': return '🏭';
+      case 'indiamart': return '🛒';
+      case 'justdial': return '📞';
+      case 'gem': return '💎';
+      case 'projects today': return '📅';
+      case 'tender tiger': return '🐯';
+      default: return '📋';
+    }
   },
-
-  // Format currency
-  formatCurrency: (amount) => {
+  
+  // Format currency values for display
+  formatCurrency(amount) {
+    if (!amount || isNaN(amount)) return 'Not specified';
+    
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
       minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
+  },
+  
+  // Validate lead form data
+  validateLead(formData) {
+    const errors = {};
+    let isValid = true;
+    
+    // Basic validations
+    if (!formData.name?.trim()) {
+      errors.name = 'Contact name is required';
+      isValid = false;
+    }
+    
+    if (!formData.company?.trim()) {
+      errors.company = 'Company name is required';
+      isValid = false;
+    }
+    
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+      isValid = false;
+    }
+    
+    if (formData.value && isNaN(parseFloat(formData.value))) {
+      errors.value = 'Lead value must be a valid number';
+      isValid = false;
+    }
+    
+    return { isValid, errors };
   }
 };
 
-// Helper functions
-function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
+// Add 'Converted' status to the existing getStatusColor function
 
-function isValidPhone(phone) {
-  const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-  return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
-}
-
+// Export enhanced leadsAPI as default
 export default leadsAPI;

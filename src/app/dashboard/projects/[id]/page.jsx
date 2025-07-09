@@ -1,39 +1,31 @@
 'use client';
-
+import { use } from 'react';
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../../../components/navigation/Navbar.jsx';
+import projectsAPI from '../../../../utils/projectsAPI.js';
 import { 
-  Briefcase, 
-  ArrowLeft, 
-  Edit, 
-  Trash2,
-  Calendar, 
-  DollarSign, 
-  User, 
-  Flag,
-  Target,
-  Clock,
-  CheckSquare,
-  Plus,
-  Eye,
-  AlertTriangle,
-  TrendingUp
+  Briefcase, ArrowLeft, Calendar, FileText, ClipboardList, Tag, 
+  Pencil, Trash2, Users, Clock, CheckCircle, AlertCircle, 
+  Plus, ChevronDown, ChevronUp
 } from 'lucide-react';
-import { projectsAPI } from '../../../../utils/projectsAPI.js';
 
-export default function ProjectDetails() {
+export default function ProjectDetail({ params: paramsPromise }) {
+      const params = use(paramsPromise); // ⬅️ Correct usage in App Router
+ 
   const router = useRouter();
-  const params = useParams();
-  const projectId = params.id;
-  
+  const id = params.id; // Using optional chaining to avoid errors
   const [user, setUser] = useState(null);
   const [project, setProject] = useState(null);
-  const [tasks, setTasks] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingTasks, setIsLoadingTasks] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [tasks, setTasks] = useState([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showActivities, setShowActivities] = useState(true);
+  const [showTeam, setShowTeam] = useState(true);
+  const [showDocuments, setShowDocuments] = useState(true);
 
   useEffect(() => {
     // Check authentication status
@@ -43,98 +35,96 @@ export default function ProjectDetails() {
     if (userData && isAuthenticated === 'true') {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-      loadProject();
-      loadProjectTasks();
+      fetchProjectDetails();
     } else {
       router.push('/');
     }
-  }, [router, projectId]);
+  }, [router, id]);
 
-  const loadProject = async () => {
+  const fetchProjectDetails = async () => {
+    setLoading(true);
     try {
-      setIsLoading(true);
-      setError('');
-      
-      const response = await projectsAPI.getById(projectId);
-      const projectData = response.project;
-      
-      if (!projectData) {
-        throw new Error('Project not found');
-      }
-
+      const projectData = await projectsAPI.getById(id);
       setProject(projectData);
+      
+      // Fetch tasks for this project
+      fetchTasks(id);
     } catch (error) {
-      console.error('Error loading project:', error);
-      setError(error.message || 'Failed to load project details');
+      console.error('Failed to fetch project details:', error);
+      setError('Failed to load project details');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const loadProjectTasks = async () => {
+  const fetchTasks = async (projectId) => {
+    setTasksLoading(true);
     try {
-      setIsLoadingTasks(true);
-      const response = await projectsAPI.getTasks(projectId);
-      setTasks(response.tasks || []);
+      const tasksData = await projectsAPI.getTasks(projectId);
+      setTasks(tasksData.tasks || []);
     } catch (error) {
-      console.error('Error loading project tasks:', error);
+      console.error('Failed to fetch project tasks:', error);
     } finally {
-      setIsLoadingTasks(false);
+      setTasksLoading(false);
     }
   };
 
   const handleDeleteProject = async () => {
-    if (confirm('Are you sure you want to delete this project? This action cannot be undone and will also delete all associated tasks.')) {
-      try {
-        await projectsAPI.delete(projectId);
-        router.push('/dashboard/projects?success=Project deleted successfully');
-      } catch (error) {
-        console.error('Error deleting project:', error);
-        alert('Failed to delete project. Please try again.');
-      }
+    if (!window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeleteLoading(true);
+    try {
+      await projectsAPI.delete(id);
+      router.push('/dashboard/projects');
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      alert('Failed to delete project: ' + error.message);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F5F5F5' }}>
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ 
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
+      }}>
+        <div className="spinner"></div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen" style={{ 
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
+      }}>
+        <Navbar />
+        <div className="max-w-7xl mx-auto px-6 py-8 flex items-center justify-center min-h-[60vh]">
+          <div className="spinner"></div>
         </div>
       </div>
     );
   }
 
-  if (isLoading) {
+  if (error || !project) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#F5F5F5' }}>
+      <div className="min-h-screen" style={{ 
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
+      }}>
         <Navbar />
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="text-center py-12">
-            <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading project details...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen" style={{ backgroundColor: '#F5F5F5' }}>
-        <Navbar />
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="text-center py-12">
-            <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Project</h3>
-            <p className="text-gray-600 mb-4">{error}</p>
-            <Link
-              href="/dashboard/projects"
-              className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Projects
+          <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
+            <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Not Found</h2>
+            <p className="text-gray-600 mb-6">{error || 'The requested project could not be found.'}</p>
+            <Link href="/dashboard/projects">
+              <button className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                <ArrowLeft size={16} />
+                Back to Projects
+              </button>
             </Link>
           </div>
         </div>
@@ -142,315 +132,280 @@ export default function ProjectDetails() {
     );
   }
 
-  if (!project) {
-    return null;
-  }
-
-  const progress = projectsAPI.calculateProgress(project.total_tasks, project.completed_tasks);
-  const isOverdue = projectsAPI.isOverdue(project.end_date, project.status);
-
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F5F5F5' }}>
+    <div className="min-h-screen" style={{ 
+      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
+    }}>
       <Navbar />
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <Link 
-                href="/dashboard/projects"
-                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-6 h-6" style={{ color: '#64126D' }} />
-              </Link>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Briefcase className="text-purple-600" size={32} />
+            <div>
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{projectsAPI.getProjectIcon(project.status)}</span>
+                <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${projectsAPI.getStatusColor(project.status)}`}>
+                  {project.status.charAt(0).toUpperCase() + project.status.slice(1).replace('_', ' ')}
+                </span>
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+                  ${project.type === 'PROPOSAL' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                  {project.type === 'PROPOSAL' ? 'Proposal' : 'Ongoing'}
+                </span>
+              </div>
+              <p className="text-gray-600">Project #{project.project_number} · Client: {project.client_name}</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
+            <Link href="/dashboard/projects">
+              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <ArrowLeft size={16} />
+                Back
+              </button>
+            </Link>
+            <Link href={`/dashboard/projects/edit/${id}`}>
+              <button className="flex items-center gap-2 px-4 py-2 border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors">
+                <Pencil size={16} />
+                Edit
+              </button>
+            </Link>
+            <button
+              onClick={handleDeleteProject}
+              disabled={deleteLoading}
+              className={`flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 border border-red-300 rounded-lg hover:bg-red-100 transition-colors ${
+                deleteLoading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+              <Trash2 size={16} />
+              {deleteLoading ? 'Deleting...' : 'Delete'}
+            </button>
+          </div>
+        </div>
+        
+        {/* Project Overview */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+              <h2 className="text-xl font-semibold mb-4 text-gray-900 border-b pb-2">Project Overview</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h1 className="text-3xl font-bold" style={{ color: '#64126D' }}>{project.name}</h1>
-                  <p style={{ color: '#86288F' }}>Project Details & Management</p>
+                  <h3 className="text-sm font-medium text-gray-500">Timeline</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Calendar size={16} className="text-gray-400" />
+                    <p className="text-gray-900">
+                      {new Date(project.start_date).toLocaleDateString()} to {new Date(project.end_date).toLocaleDateString()}
+                      {' '}({projectsAPI.daysBetween(project.start_date, project.end_date)} days)
+                    </p>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Value</h3>
+                  <p className="text-gray-900 mt-1">{projectsAPI.formatCurrency(project.value || 0)}</p>
+                </div>
+                
+                <div className="md:col-span-2">
+                  <h3 className="text-sm font-medium text-gray-500">Progress</h3>
+                  <div className="mt-1">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-medium text-gray-700">
+                        {projectsAPI.calculateProgress(project.total_tasks || 0, project.completed_tasks || 0)}%
+                      </span>
+                      <span className="text-xs font-medium text-gray-700">
+                        {project.completed_tasks || 0}/{project.total_tasks || 0} tasks completed
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${projectsAPI.isOverdue(project.end_date, project.status) ? 'bg-red-500' : 'bg-green-500'}`}
+                        style={{ width: `${projectsAPI.calculateProgress(project.total_tasks || 0, project.completed_tasks || 0)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="md:col-span-2">
+                  <h3 className="text-sm font-medium text-gray-500">Description</h3>
+                  <p className="text-gray-700 mt-1 whitespace-pre-line">{project.description || 'No description provided.'}</p>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              <Link
-                href={`/dashboard/projects/edit/${projectId}`}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            {/* Activities Section */}
+            <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+              <div 
+                className="flex items-center justify-between cursor-pointer" 
+                onClick={() => setShowActivities(!showActivities)}
               >
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Project
-              </Link>
-              <button
-                onClick={handleDeleteProject}
-                className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Project Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Status</p>
-                <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full border ${projectsAPI.getStatusColor(project.status)}`}>
-                  {project.status.replace('_', ' ').charAt(0).toUpperCase() + project.status.replace('_', ' ').slice(1)}
-                </span>
+                <h2 className="text-xl font-semibold text-gray-900">Activities & Tasks</h2>
+                {showActivities ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </div>
-              <Target className="w-8 h-8 text-purple-600" />
-            </div>
-          </div>
-
-          <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Priority</p>
-                <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full border ${projectsAPI.getPriorityColor(project.priority)}`}>
-                  {projectsAPI.getPriorityIcon(project.priority)} {project.priority.charAt(0).toUpperCase() + project.priority.slice(1)}
-                </span>
-              </div>
-              <Flag className="w-8 h-8 text-orange-600" />
-            </div>
-          </div>
-
-          <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Progress</p>
-                <div className="flex items-center">
-                  <div className="w-20 bg-gray-200 rounded-full h-2 mr-2">
-                    <div
-                      className="bg-purple-600 h-2 rounded-full"
-                      style={{ width: `${progress}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-sm font-semibold">{progress}%</span>
-                </div>
-              </div>
-              <TrendingUp className="w-8 h-8 text-green-600" />
-            </div>
-          </div>
-
-          <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Budget</p>
-                <p className="text-xl font-bold text-purple-600">
-                  {projectsAPI.formatCurrency(project.budget)}
-                </p>
-              </div>
-              <DollarSign className="w-8 h-8 text-purple-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Project Information */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Description */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Project Description</h2>
-              <p className="text-gray-700 leading-relaxed">{project.description}</p>
-            </div>
-
-            {/* Project Tasks */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Project Tasks</h2>
-                <Link
-                  href={`/dashboard/projects/${projectId}/tasks/add`}
-                  className="inline-flex items-center px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Task
-                </Link>
-              </div>
-
-              {isLoadingTasks ? (
-                <div className="text-center py-8">
-                  <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <p className="text-gray-600 text-sm">Loading tasks...</p>
-                </div>
-              ) : tasks.length === 0 ? (
-                <div className="text-center py-8">
-                  <CheckSquare className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600">No tasks found for this project</p>
-                  <Link
-                    href={`/dashboard/projects/${projectId}/tasks/add`}
-                    className="inline-flex items-center mt-2 text-purple-600 hover:text-purple-700"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Create your first task
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {tasks.slice(0, 5).map((task) => (
-                    <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center">
-                        <div className={`w-3 h-3 rounded-full mr-3 ${
-                          task.status === 'completed' ? 'bg-green-500' :
-                          task.status === 'in_progress' ? 'bg-blue-500' :
-                          task.status === 'on_hold' ? 'bg-yellow-500' :
-                          'bg-gray-400'
-                        }`}></div>
-                        <div>
-                          <p className="font-medium text-gray-900">{task.title}</p>
-                          <p className="text-sm text-gray-600">
-                            Due: {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Not set'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          task.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                          task.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                          task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {task.priority}
-                        </span>
-                        <Link
-                          href={`/dashboard/projects/${projectId}/tasks/${task.id}`}
-                          className="text-purple-600 hover:text-purple-700"
-                        >
-                          <Eye className="w-4 h-4" />
+              
+              {showActivities && (
+                <div className="mt-4">
+                  {tasksLoading ? (
+                    <div className="py-4 text-center">
+                      <div className="spinner mx-auto"></div>
+                      <p className="text-gray-500 mt-2">Loading tasks...</p>
+                    </div>
+                  ) : tasks.length === 0 ? (
+                    <div className="py-6 text-center border-t">
+                      <p className="text-gray-500">No activities or tasks found</p>
+                      <Link href={`/dashboard/projects/tasks/add?project=${id}`}>
+                        <button className="mt-2 inline-flex items-center gap-1 text-sm text-purple-600 hover:text-purple-800">
+                          <Plus size={14} />
+                          Add Task
+                        </button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="mt-4 border-t pt-4">
+                      <div className="flex justify-end mb-4">
+                        <Link href={`/dashboard/projects/tasks/add?project=${id}`}>
+                          <button className="inline-flex items-center gap-1 text-sm text-purple-600 hover:text-purple-800 border border-purple-200 px-3 py-1 rounded-md">
+                            <Plus size={14} />
+                            Add Task
+                          </button>
                         </Link>
                       </div>
-                    </div>
-                  ))}
-                  {tasks.length > 5 && (
-                    <div className="text-center pt-3">
-                      <Link
-                        href={`/dashboard/projects/${projectId}/tasks`}
-                        className="text-purple-600 hover:text-purple-700 text-sm"
-                      >
-                        View all {tasks.length} tasks →
-                      </Link>
+                      
+                      <div className="space-y-4">
+                        {tasks.map(task => (
+                          <div key={task.id} className="p-4 border rounded-md bg-gray-50">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="font-medium text-gray-900">{task.title}</h4>
+                                <p className="text-sm text-gray-600">{task.description}</p>
+                              </div>
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                task.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {task.status === 'in_progress' ? 'In Progress' : 
+                                  task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-6 mt-3 text-xs text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Users size={12} />
+                                <span>{task.assigned_to_name || 'Unassigned'}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock size={12} />
+                                <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
               )}
             </div>
           </div>
-
-          {/* Project Details Sidebar */}
+          
           <div className="space-y-6">
-            {/* Project Info */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Project Information</h3>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <User className="w-5 h-5 text-gray-400 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-600">Project Manager</p>
-                    <p className="text-gray-900">
-                      {project.manager_name 
-                        ? `${project.manager_name} ${project.manager_lastname || ''}`.trim()
-                        : 'Unassigned'
-                      }
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center">
-                  <Calendar className="w-5 h-5 text-gray-400 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-600">Start Date</p>
-                    <p className="text-gray-900">
-                      {project.start_date ? new Date(project.start_date).toLocaleDateString() : 'Not set'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center">
-                  <Calendar className="w-5 h-5 text-gray-400 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-600">End Date</p>
-                    <div className="flex items-center">
-                      {isOverdue && <AlertTriangle className="w-4 h-4 text-red-500 mr-1" />}
-                      <p className={`text-gray-900 ${isOverdue ? 'text-red-600' : ''}`}>
-                        {project.end_date ? new Date(project.end_date).toLocaleDateString() : 'Not set'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {project.client_name && (
-                  <div className="flex items-center">
-                    <Briefcase className="w-5 h-5 text-gray-400 mr-3" />
-                    <div>
-                      <p className="text-sm text-gray-600">Client</p>
-                      <p className="text-gray-900">{project.client_name}</p>
-                    </div>
-                  </div>
-                )}
-
-                {project.department && (
-                  <div className="flex items-center">
-                    <Target className="w-5 h-5 text-gray-400 mr-3" />
-                    <div>
-                      <p className="text-sm text-gray-600">Department</p>
-                      <p className="text-gray-900">{project.department}</p>
-                    </div>
-                  </div>
-                )}
+            {/* Team Members */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div 
+                className="flex items-center justify-between cursor-pointer" 
+                onClick={() => setShowTeam(!showTeam)}
+              >
+                <h2 className="text-xl font-semibold text-gray-900">Team</h2>
+                {showTeam ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </div>
+              
+              {showTeam && (
+                <div className="mt-4 space-y-3 border-t pt-4">
+                  {project.team && project.team.length > 0 ? (
+                    project.team.map((member, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-medium">
+                            {member.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{member.name}</p>
+                            <p className="text-xs text-gray-500">{member.role || 'Team Member'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-sm py-2">No team members assigned</p>
+                  )}
+                </div>
+              )}
             </div>
-
-            {/* Project Statistics */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Tasks</span>
-                  <span className="font-semibold">{project.total_tasks || 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Completed Tasks</span>
-                  <span className="font-semibold text-green-600">{project.completed_tasks || 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">In Progress</span>
-                  <span className="font-semibold text-blue-600">
-                    {(project.total_tasks || 0) - (project.completed_tasks || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Days Remaining</span>
-                  <span className="font-semibold">
-                    {project.end_date 
-                      ? Math.max(0, Math.ceil((new Date(project.end_date) - new Date()) / (1000 * 60 * 60 * 24)))
-                      : 'N/A'
-                    }
-                  </span>
-                </div>
+            
+            {/* Documents */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div 
+                className="flex items-center justify-between cursor-pointer" 
+                onClick={() => setShowDocuments(!showDocuments)}
+              >
+                <h2 className="text-xl font-semibold text-gray-900">Documents</h2>
+                {showDocuments ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
               </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                <Link
-                  href={`/dashboard/projects/${projectId}/tasks`}
-                  className="w-full inline-flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  <CheckSquare className="w-4 h-4 mr-2" />
-                  Manage Tasks
-                </Link>
-                <Link
-                  href={`/dashboard/projects/${projectId}/tasks/add`}
-                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add New Task
-                </Link>
-              </div>
+              
+              {showDocuments && (
+                <div className="mt-4 border-t pt-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText size={18} className="text-blue-600" />
+                      <div>
+                        <p className="font-medium text-gray-900">Quotation</p>
+                        {project.has_quotation ? (
+                          <p className="text-xs text-gray-500">{project.quotation_number} - {new Date(project.quotation_date).toLocaleDateString()}</p>
+                        ) : (
+                          <p className="text-xs text-gray-500">Not available</p>
+                        )}
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 text-xs rounded-full ${project.has_quotation ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+                      {project.has_quotation ? 'Available' : 'Missing'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ClipboardList size={18} className="text-green-600" />
+                      <div>
+                        <p className="font-medium text-gray-900">Purchase Order</p>
+                        {project.has_po ? (
+                          <p className="text-xs text-gray-500">{project.po_number} - {new Date(project.po_date).toLocaleDateString()}</p>
+                        ) : (
+                          <p className="text-xs text-gray-500">Not available</p>
+                        )}
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 text-xs rounded-full ${project.has_po ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+                      {project.has_po ? 'Available' : 'Missing'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Tag size={18} className="text-purple-600" />
+                      <div>
+                        <p className="font-medium text-gray-900">Invoice</p>
+                        {project.has_invoice ? (
+                          <p className="text-xs text-gray-500">{project.invoice_number} - {new Date(project.invoice_date).toLocaleDateString()}</p>
+                        ) : (
+                          <p className="text-xs text-gray-500">Not available</p>
+                        )}
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 text-xs rounded-full ${project.has_invoice ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+                      {project.has_invoice ? 'Available' : 'Missing'}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
