@@ -2,9 +2,10 @@ import { getDbConnection } from '../../../lib/db';
 
 export default async function handler(req, res) {
   const { method } = req;
+  let db;
 
   try {
-    const db = await getDbConnection();
+    db = await getDbConnection();
     
     switch (method) {
       case 'GET':
@@ -153,5 +154,14 @@ export default async function handler(req, res) {
       message: 'Internal server error',
       error: error.message
     });
+  } finally {
+    // Always close the database connection
+    if (db) {
+      try {
+        await db.end();
+      } catch (closeError) {
+        console.error('Error closing database connection:', closeError);
+      }
+    }
   }
 }

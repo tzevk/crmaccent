@@ -1,9 +1,12 @@
 import { getDbConnection } from '../../../lib/db';
 
 export default async function handler(req, res) {
-  if (req.method === 'GET') {
-    try {
-      const db = await getDbConnection();
+  let db;
+  
+  try {
+    db = await getDbConnection();
+    
+    if (req.method === 'GET') {
       
       const { search, status, type, limit = 50, page = 1 } = req.query;
       let whereClause = '';
@@ -75,13 +78,7 @@ export default async function handler(req, res) {
           hasPreviousPage: page > 1
         }
       });
-    } catch (error) {
-      console.error('Error fetching outreach:', error);
-      res.status(500).json({ message: 'Error fetching outreach data' });
-    }
-  } else if (req.method === 'POST') {
-    try {
-      const db = await getDbConnection();
+    } else if (req.method === 'POST') {
       const {
         type,
         subject,
@@ -123,12 +120,21 @@ export default async function handler(req, res) {
         message: 'Outreach created successfully',
         id: result.insertId
       });
-    } catch (error) {
-      console.error('Error creating outreach:', error);
-      res.status(500).json({ message: 'Error creating outreach' });
+    } else {
+      res.setHeader('Allow', ['GET', 'POST']);
+      res.status(405).end(`Method ${req.method} Not Allowed`);
     }
-  } else {
-    res.setHeader('Allow', ['GET', 'POST']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+  } catch (error) {
+    console.error('Error in outreach API:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  } finally {
+    // Always close the database connection
+    if (db) {
+      try {
+        await db.end();
+      } catch (closeError) {
+        console.error('Error closing database connection:', closeError);
+      }
+    }
   }
 }

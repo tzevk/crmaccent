@@ -7,8 +7,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
+  let db;
   try {
-    const db = await getDbConnection();
+    db = await getDbConnection();
     
     // Get current date components
     const now = new Date();
@@ -41,5 +42,14 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Error generating project number:', error);
     return res.status(500).json({ message: 'Failed to generate project number' });
+  } finally {
+    // Always close the database connection
+    if (db) {
+      try {
+        await db.end();
+      } catch (closeError) {
+        console.error('Error closing database connection:', closeError);
+      }
+    }
   }
 }
