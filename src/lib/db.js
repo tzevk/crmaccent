@@ -37,3 +37,13 @@ export async function executeQuery(query, params = []) {
     }
   }
 }
+
+// Get a direct database connection - useful for transaction support
+export async function getDbConnection() {
+  try {
+    return await mysql.createConnection(dbConfig);
+  } catch (error) {
+    console.error('Database connection error:', error);
+    throw error;
+  }
+}

@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../../../../components/navigation/Navbar.jsx';
 import projectsAPI from '../../../../../utils/projectsAPI.js';
 import { CheckCircle, ArrowLeft, Calendar, Clock, AlertCircle } from 'lucide-react';
 
-export default function AddTask() {
+// Wrapper component that safely uses searchParams
+function AddTaskContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const projectId = searchParams.get('project');
@@ -58,7 +59,7 @@ export default function AddTask() {
       const projectData = await projectsAPI.getById(id);
       setProject(projectData);
     } catch (error) {
-      console.error('Failed to fetch project details:', error);
+      setError('Failed to fetch project details. Please try again.');
     } finally {
       setProjectLoading(false);
     }
@@ -306,5 +307,20 @@ export default function AddTask() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function AddTask() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ 
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
+      }}>
+        <div className="spinner"></div>
+      </div>
+    }>
+      <AddTaskContent />
+    </Suspense>
   );
 }
