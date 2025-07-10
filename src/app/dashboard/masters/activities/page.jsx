@@ -129,7 +129,7 @@ export default function ActivitiesMaster() {
             </div>
             <div className="flex space-x-3">
               <Link
-                href="/dashboard/activities/new"
+                href="/dashboard/masters/activities/add"
                 className="inline-flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
               >
                 <Plus className="h-4 w-4" />

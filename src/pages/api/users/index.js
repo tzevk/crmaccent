@@ -2,11 +2,69 @@ import { executeQuery } from '../../../lib/db';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
-    // Get all users
+    // Get all users with optional filtering
     try {
-      console.log('Fetching users from database');
-      const query = 'SELECT id, username, email, first_name, last_name, role, is_active, created_at, updated_at FROM users ORDER BY created_at DESC';
-      const users = await executeQuery(query);
+      const { role, status, search, department } = req.query;
+      
+      // First check which columns actually exist in the users table
+      const tableInfo = await executeQuery(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'users'
+      `);
+      
+      const columnNames = tableInfo.map(col => col.COLUMN_NAME.toLowerCase());
+      
+      // Build the SELECT clause dynamically based on existing columns
+      const baseColumns = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_active', 'created_at', 'updated_at'];
+      const optionalColumns = ['department', 'job_title', 'last_login_at'];
+      
+      const selectColumns = [
+        ...baseColumns.filter(col => columnNames.includes(col.toLowerCase())),
+        ...optionalColumns.filter(col => columnNames.includes(col.toLowerCase()))
+      ];
+      
+      let query = `
+        SELECT ${selectColumns.join(', ')}
+        FROM users 
+        WHERE 1=1
+      `;
+      
+      let params = [];
+      
+      // Add filters conditionally
+      if (role && ['admin', 'manager', 'user'].includes(role)) {
+        query += ' AND role = ?';
+        params.push(role);
+      }
+      
+      if (status && ['active', 'inactive'].includes(status)) {
+        const isActive = status === 'active' ? 1 : 0;
+        query += ' AND is_active = ?';
+        params.push(isActive);
+      }
+      
+      if (department && columnNames.includes('department')) {
+        query += ' AND department = ?';
+        params.push(department);
+      }
+      
+      if (search) {
+        query += ` AND (
+          username LIKE ? OR 
+          email LIKE ? OR 
+          first_name LIKE ? OR 
+          last_name LIKE ? OR
+          CONCAT(first_name, ' ', last_name) LIKE ?
+        )`;
+        const searchParam = `%${search}%`;
+        params.push(searchParam, searchParam, searchParam, searchParam, searchParam);
+      }
+      
+      // Add sorting
+      query += ' ORDER BY created_at DESC';
+      
+      const users = await executeQuery(query, params);
       
       return res.status(200).json({
         users: users,
@@ -20,7 +78,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     // Add new user
-    const { username, email, first_name, last_name, role, password } = req.body;
+    const { username, email, first_name, last_name, role, password, department, job_title } = req.body;
 
     // Validation
     if (!username || !email || !first_name || !last_name || !role || !password) {
@@ -46,8 +104,6 @@ export default async function handler(req, res) {
     }
 
     try {
-      console.log('Production mode: Adding user to database');
-      
       // Check if username or email already exists
       const checkQuery = 'SELECT id FROM users WHERE username = ? OR email = ?';
       const existingUsers = await executeQuery(checkQuery, [username, email]);
@@ -57,20 +113,51 @@ export default async function handler(req, res) {
           message: 'Username or email already exists' 
         });
       }
+      
+      // First check if department and job_title columns exist in the table
+      let additionalColumns = "";
+      let additionalValues = "";
+      const params = [username, email, first_name, last_name, role, password];
+      
+      try {
+        const columnCheck = await executeQuery(
+          "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' AND COLUMN_NAME IN ('department', 'job_title')"
+        );
+        
+        const hasColumn = (name) => columnCheck.some(col => col.COLUMN_NAME === name);
+        
+        if (department && hasColumn('department')) {
+          additionalColumns += ", department";
+          additionalValues += ", ?";
+          params.push(department);
+        }
+        
+        if (job_title && hasColumn('job_title')) {
+          additionalColumns += ", job_title";
+          additionalValues += ", ?";
+          params.push(job_title);
+        }
+      } catch (error) {
+        console.error("Error checking for columns:", error);
+        // Continue with the insert without these fields
+      }
 
-      // Store password as plain text (for simplicity)
       // Insert new user
       const insertQuery = `
-        INSERT INTO users (username, email, first_name, last_name, role, password, is_active, created_at, updated_at) 
-        VALUES (?, ?, ?, ?, ?, ?, 1, NOW(), NOW())
+        INSERT INTO users (username, email, first_name, last_name, role, password, is_active, created_at, updated_at${additionalColumns}) 
+        VALUES (?, ?, ?, ?, ?, ?, 1, NOW(), NOW()${additionalValues})
       `;
       
-      const result = await executeQuery(insertQuery, [
-        username, email, first_name, last_name, role, password
-      ]);
+      const result = await executeQuery(insertQuery, params);
 
       // Get the created user (without password)
-      const getUserQuery = 'SELECT id, username, email, first_name, last_name, role, is_active, created_at, updated_at FROM users WHERE id = ?';
+      const getUserQuery = `
+        SELECT id, username, email, first_name, last_name, role, 
+               is_active, created_at, updated_at, 
+               department, job_title, last_login_at
+        FROM users 
+        WHERE id = ?
+      `;
       const newUsers = await executeQuery(getUserQuery, [result.insertId]);
       const newUser = newUsers[0];
 

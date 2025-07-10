@@ -96,59 +96,72 @@ async function handleGet(req, res, id) {
 
   const tasks = await executeQuery(tasksQuery, [id]);
 
-  // Get project activities
+  // Get project activities (simplified to avoid JOIN issues)
   const activitiesQuery = `
-    SELECT 
-      pa.*,
-      u.first_name as created_by_name,
-      u.last_name as created_by_lastname,
-      pt.task_name as task_title
-    FROM project_activities pa
-    LEFT JOIN users u ON pa.created_by = u.id
-    LEFT JOIN project_tasks pt ON pa.task_id = pt.id
-    WHERE pa.project_id = ?
-    ORDER BY pa.activity_date DESC
+    SELECT *
+    FROM project_activities
+    WHERE project_id = ?
+    ORDER BY activity_date DESC
     LIMIT 20
   `;
 
-  const activities = await executeQuery(activitiesQuery, [id]);
+  let activities = [];
+  try {
+    activities = await executeQuery(activitiesQuery, [id]);
+  } catch (error) {
+    console.log('Activities table may not exist yet:', error.message);
+    activities = [];
+  }
 
-  // Get project milestones
-  const milestonesQuery = `
-    SELECT *
-    FROM project_milestones
-    WHERE project_id = ?
-    ORDER BY order_index ASC, due_date ASC
-  `;
+  // Get project milestones (handle if table doesn't exist)
+  let milestones = [];
+  try {
+    const milestonesQuery = `
+      SELECT *
+      FROM project_milestones
+      WHERE project_id = ?
+      ORDER BY order_index ASC, due_date ASC
+    `;
+    milestones = await executeQuery(milestonesQuery, [id]);
+  } catch (error) {
+    console.log('Milestones table may not exist yet:', error.message);
+    milestones = [];
+  }
 
-  const milestones = await executeQuery(milestonesQuery, [id]);
+  // Get time logs summary (handle if table doesn't exist)
+  let timeLogsSummary = [{ total_hours: 0, billable_amount: 0, total_entries: 0 }];
+  try {
+    const timeLogsQuery = `
+      SELECT 
+        SUM(hours) as total_hours,
+        SUM(CASE WHEN is_billable = 1 THEN hours * hourly_rate ELSE 0 END) as billable_amount,
+        COUNT(*) as total_entries
+      FROM project_time_logs
+      WHERE project_id = ?
+    `;
+    timeLogsSummary = await executeQuery(timeLogsQuery, [id]);
+  } catch (error) {
+    console.log('Time logs table may not exist yet:', error.message);
+  }
 
-  // Get time logs summary
-  const timeLogsQuery = `
-    SELECT 
-      SUM(hours) as total_hours,
-      SUM(CASE WHEN is_billable = 1 THEN hours * hourly_rate ELSE 0 END) as billable_amount,
-      COUNT(*) as total_entries
-    FROM project_time_logs
-    WHERE project_id = ?
-  `;
-
-  const timeLogsSummary = await executeQuery(timeLogsQuery, [id]);
-
-  // Get task statistics
-  const taskStatsQuery = `
-    SELECT 
-      COUNT(*) as total_tasks,
-      SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_tasks,
-      SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_tasks,
-      SUM(CASE WHEN status = 'todo' THEN 1 ELSE 0 END) as todo_tasks,
-      SUM(estimated_hours) as total_estimated_hours,
-      SUM(actual_hours) as total_actual_hours
-    FROM project_tasks
-    WHERE project_id = ?
-  `;
-
-  const taskStats = await executeQuery(taskStatsQuery, [id]);
+  // Get task statistics (handle if table doesn't exist)
+  let taskStats = [{ total_tasks: 0, completed_tasks: 0, in_progress_tasks: 0, todo_tasks: 0, total_estimated_hours: 0, total_actual_hours: 0 }];
+  try {
+    const taskStatsQuery = `
+      SELECT 
+        COUNT(*) as total_tasks,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_tasks,
+        SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_tasks,
+        SUM(CASE WHEN status = 'todo' THEN 1 ELSE 0 END) as todo_tasks,
+        SUM(estimated_hours) as total_estimated_hours,
+        SUM(actual_hours) as total_actual_hours
+      FROM project_tasks
+      WHERE project_id = ?
+    `;
+    taskStats = await executeQuery(taskStatsQuery, [id]);
+  } catch (error) {
+    console.log('Project tasks table may not exist yet:', error.message);
+  }
 
   return res.status(200).json({
     project,
@@ -190,13 +203,13 @@ async function handlePut(req, res, id) {
   // Log activity
   if (updateData.status) {
     await executeQuery(
-      'INSERT INTO project_activities (project_id, activity_type, subject, description, created_by) VALUES (?, ?, ?, ?, ?)',
-      [id, 'status_change', 'Project status updated', `Project status changed to ${updateData.status}`, updated_by]
+      'INSERT INTO project_activities (project_id, activity_type, subject, description) VALUES (?, ?, ?, ?)',
+      [id, 'status_change', 'Project status updated', `Project status changed to ${updateData.status}`]
     );
   } else {
     await executeQuery(
-      'INSERT INTO project_activities (project_id, activity_type, subject, description, created_by) VALUES (?, ?, ?, ?, ?)',
-      [id, 'comment', 'Project updated', `Project information was updated`, updated_by]
+      'INSERT INTO project_activities (project_id, activity_type, subject, description) VALUES (?, ?, ?, ?)',
+      [id, 'comment', 'Project updated', `Project information was updated`]
     );
   }
 

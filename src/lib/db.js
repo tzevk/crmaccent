@@ -9,8 +9,6 @@ const dbConfig = {
   database: process.env.DB_NAME,
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
   connectTimeout: 30000,
-  acquireTimeout: 30000,
-  timeout: 60000,
   connectionLimit: 5,        // Respect limits on shared hosting
   queueLimit: 0,             // No queue limit
   enableKeepAlive: true,

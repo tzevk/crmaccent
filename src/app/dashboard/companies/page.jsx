@@ -13,7 +13,10 @@ import {
   MapPin,
   ExternalLink,
   Filter,
-  Download
+  Download,
+  Eye,
+  Edit,
+  Trash2
 } from 'lucide-react';
 
 export default function CompaniesPage() {
@@ -23,6 +26,31 @@ export default function CompaniesPage() {
   const [filteredCompanies, setFilteredCompanies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const deleteCompany = async (companyId) => {
+    if (!confirm('Are you sure you want to delete this company? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/companies/${companyId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete company');
+      }
+
+      // Remove the company from the local state
+      setCompanies(companies.filter(company => company.id !== companyId));
+      setFilteredCompanies(filteredCompanies.filter(company => company.id !== companyId));
+      
+      alert('Company deleted successfully');
+    } catch (error) {
+      console.error('Error deleting company:', error);
+      alert('Error deleting company. Please try again.');
+    }
+  };
 
   useEffect(() => {
     // Check authentication status
@@ -273,18 +301,29 @@ export default function CompaniesPage() {
                         <span className="text-sm text-gray-900">{company.projects_count || 0} projects</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <Link
-                          href={`/dashboard/companies/${company.id}`}
-                          className="text-purple-600 hover:text-purple-800 mx-2"
-                        >
-                          View
-                        </Link>
-                        <Link
-                          href={`/dashboard/companies/edit/${company.id}`}
-                          className="text-blue-600 hover:text-blue-800 mx-2"
-                        >
-                          Edit
-                        </Link>
+                        <div className="flex items-center justify-center space-x-2">
+                          <Link
+                            href={`/dashboard/companies/${company.id}`}
+                            className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition-colors"
+                            title="View Company Details"
+                          >
+                            <Eye size={16} />
+                          </Link>
+                          <Link
+                            href={`/dashboard/companies/${company.id}/edit`}
+                            className="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-full transition-colors"
+                            title="Edit Company"
+                          >
+                            <Edit size={16} />
+                          </Link>
+                          <button
+                            onClick={() => deleteCompany(company.id)}
+                            className="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-full transition-colors"
+                            title="Delete Company"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

@@ -58,7 +58,7 @@ async function handleGet(req, res, id) {
       CONCAT(u.first_name, ' ', u.last_name) as project_manager_name
     FROM projects p
     LEFT JOIN users u ON p.project_manager_id = u.id
-    WHERE p.company_id = ?
+    WHERE p.client_id = ?
     ORDER BY p.created_at DESC
   `;
 
@@ -116,7 +116,7 @@ async function handlePut(req, res, id) {
 
 async function handleDelete(req, res, id) {
   // Check if company has associated projects
-  const projectsCheck = await executeQuery('SELECT COUNT(*) as count FROM projects WHERE company_id = ?', [id]);
+  const projectsCheck = await executeQuery('SELECT COUNT(*) as count FROM projects WHERE client_id = ?', [id]);
   
   if (projectsCheck[0].count > 0) {
     return res.status(400).json({ 

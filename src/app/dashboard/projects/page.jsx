@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../../components/navigation/Navbar.jsx';
-import { Briefcase, Plus, Search, Filter, Calendar, Users, FileText, ClipboardList, Tag } from 'lucide-react';
+import { Briefcase, Plus, Search, Filter, Calendar, Users, FileText, ClipboardList, Tag, Eye, Edit, Trash2 } from 'lucide-react';
 import projectsAPI from '../../../utils/projectsAPI.js';
 
 export default function AllProjects() {
@@ -77,6 +77,33 @@ export default function AllProjects() {
         thisMonth: 0,
         teamMembers: 0
       });
+    }
+  };
+
+  const deleteProject = async (projectId) => {
+    if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete project');
+      }
+
+      // Remove the project from the local state
+      setProjects(projects.filter(project => project.id !== projectId));
+      
+      alert('Project deleted successfully');
+      
+      // Refresh stats after deletion
+      fetchStats();
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      alert('Error deleting project. Please try again.');
     }
   };
 
@@ -243,8 +270,8 @@ export default function AllProjects() {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Documents
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Action
+                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -306,10 +333,30 @@ export default function AllProjects() {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <Link href={`/dashboard/projects/${project.id}`} className="text-purple-600 hover:text-purple-900">
-                          View
-                        </Link>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center space-x-2">
+                          <Link
+                            href={`/dashboard/projects/${project.id}`}
+                            className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full transition-colors"
+                            title="View Project Details"
+                          >
+                            <Eye size={16} />
+                          </Link>
+                          <Link
+                            href={`/dashboard/projects/edit/${project.id}`}
+                            className="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-full transition-colors"
+                            title="Edit Project"
+                          >
+                            <Edit size={16} />
+                          </Link>
+                          <button
+                            onClick={() => deleteProject(project.id)}
+                            className="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-full transition-colors"
+                            title="Delete Project"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
