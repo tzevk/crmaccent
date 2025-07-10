@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, ChevronLeft, Save, Trash2, CheckCircle2, XCircle } from 'lucide-react';
 
 // Import components
-import Navbar from '../../../../../components/navigation/Navbar';
-import Breadcrumb from '../../../../../components/ui/Breadcrumb';
+import Navbar from '../../../components/navigation/Navbar';
+import Breadcrumb from '../../../components/ui/Breadcrumb';
 
 // Import navigation configuration
-import { navigationItems, getCurrentPageFromPath, handleNavigation, getBreadcrumbItems } from '../../../../../config/navigation';
+import { navigationItems, getCurrentPageFromPath, handleNavigation, getBreadcrumbItems } from '../../../config/navigation';
 
 export default function UserDetail({ params }) {
   const router = useRouter();
