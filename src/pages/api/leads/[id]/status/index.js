@@ -1,4 +1,4 @@
-import { executeQuery } from '../../../../../lib/db';
+import { executeQuery } from '../../../../../lib/db'; // ✅ correct
 export default async function handler(req, res) {
   if (req.method !== 'PUT') {
     return res.status(405).json({ message: 'Method not allowed' });
