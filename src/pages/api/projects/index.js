@@ -25,7 +25,7 @@ export default async function handler(req, res) {
   }
 }
 
-// GET /api/projects - Get all projects with optional filtering and manhours data
+// GET /api/projects - Get all projects with optional filtering
 async function handleGet(req, res) {
   const { 
     status, 
@@ -138,39 +138,52 @@ async function handlePost(req, res) {
     name,
     description,
     client_id,
+    lead_id,
     status = 'planning',
     priority = 'medium',
     start_date,
     end_date,
-    value = 0,
-    created_by
+    estimated_hours = 0,
+    budget = 0,
+    project_manager_id,
+    team_members,
+    tags,
+    notes,
+    created_by,
+    project_number // Optional - will be generated if not provided
   } = req.body;
+  
+  // Generate a unique project number if not provided
+  const generatedProjectNumber = project_number || `PROJ-${Date.now().toString().slice(-6)}`;
 
   // Validation
   if (!name) {
     return res.status(400).json({ message: 'Project name is required' });
   }
 
-  // Generate project number
-  const project_number = `PROJ-${Date.now().toString().slice(-6)}`;
-
   const query = `
     INSERT INTO projects (
-      project_number, name, description, client_id, status, priority, 
-      start_date, end_date, value, created_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      project_number, name, description, client_id, lead_id, status, priority, start_date, end_date,
+      estimated_hours, budget, project_manager_id, team_members, tags, notes, created_by
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const params = [
-    project_number,
+    generatedProjectNumber,
     name, 
     description || null, 
     client_id || null,
+    lead_id || null,
     status, 
     priority, 
     start_date || null,
     end_date || null,
-    value,
+    estimated_hours, 
+    budget,
+    project_manager_id || null,
+    team_members ? JSON.stringify(team_members) : null,
+    tags || null, 
+    notes || null, 
     created_by || null
   ];
 
@@ -178,20 +191,15 @@ async function handlePost(req, res) {
 
   // Log activity
   if (result.insertId) {
-    try {
-      await executeQuery(
-        'INSERT INTO logs (user_id, action, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?)',
-        [created_by || 1, 'Project created', 'project', result.insertId, `Project "${name}" was created`]
-      );
-    } catch (logError) {
-      console.warn('Failed to log project creation:', logError.message);
-    }
+    await executeQuery(
+      'INSERT INTO logs (user_id, action, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?)',
+      [created_by, 'Project created', 'project', result.insertId, `Project "${name}" was created`]
+    );
   }
 
   return res.status(201).json({
     message: 'Project created successfully',
-    projectId: result.insertId,
-    projectNumber: project_number
+    projectId: result.insertId
   });
 }
 
@@ -201,6 +209,11 @@ async function handlePut(req, res) {
 
   if (!id) {
     return res.status(400).json({ message: 'Project ID is required' });
+  }
+
+  // Handle team_members JSON conversion
+  if (updateData.team_members && Array.isArray(updateData.team_members)) {
+    updateData.team_members = JSON.stringify(updateData.team_members);
   }
 
   // Build dynamic update query
@@ -222,20 +235,16 @@ async function handlePut(req, res) {
   }
 
   // Log activity
-  try {
-    if (updateData.status) {
-      await executeQuery(
-        'INSERT INTO logs (user_id, action, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?)',
-        [updated_by || 1, 'Project status updated', 'project', id, `Project status changed to ${updateData.status}`]
-      );
-    } else {
-      await executeQuery(
-        'INSERT INTO logs (user_id, action, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?)',
-        [updated_by || 1, 'Project updated', 'project', id, 'Project information was updated']
-      );
-    }
-  } catch (logError) {
-    console.warn('Failed to log project update:', logError.message);
+  if (updateData.status) {
+    await executeQuery(
+      'INSERT INTO logs (user_id, action, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?)',
+      [updated_by, 'Project status updated', 'project', id, `Project status changed to ${updateData.status}`]
+    );
+  } else {
+    await executeQuery(
+      'INSERT INTO logs (user_id, action, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?)',
+      [updated_by, 'Project updated', 'project', id, 'Project information was updated']
+    );
   }
 
   return res.status(200).json({
