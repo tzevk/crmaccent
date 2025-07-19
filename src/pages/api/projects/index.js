@@ -1,4 +1,4 @@
-import { executeQuery } from '../../../lib/db';
+import { executeQuery } from '../../../lib/db.js';
 
 export default async function handler(req, res) {
   const { method } = req;
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
   }
 }
 
-// GET /api/projects - Get all projects with optional filtering
+// GET /api/projects - Get all projects with optional filtering and manhours data
 async function handleGet(req, res) {
   const { 
     status, 
@@ -44,7 +44,14 @@ async function handleGet(req, res) {
       c.name as client_name,
       c.name as company_name,
       (SELECT COUNT(*) FROM project_tasks pt WHERE pt.project_id = p.id) as total_tasks,
-      (SELECT COUNT(*) FROM project_tasks pt WHERE pt.project_id = p.id AND pt.status = 'completed') as completed_tasks
+      (SELECT COUNT(*) FROM project_tasks pt WHERE pt.project_id = p.id AND pt.status = 'completed') as completed_tasks,
+      COALESCE((SELECT SUM(pt.estimated_hours) FROM project_tasks pt WHERE pt.project_id = p.id), 0) as total_estimated_hours,
+      COALESCE((SELECT SUM(pt.actual_hours) FROM project_tasks pt WHERE pt.project_id = p.id), 0) as total_actual_hours,
+      CASE 
+        WHEN COALESCE((SELECT SUM(pt.estimated_hours) FROM project_tasks pt WHERE pt.project_id = p.id), 0) > 0 
+        THEN ROUND((COALESCE((SELECT SUM(pt.actual_hours) FROM project_tasks pt WHERE pt.project_id = p.id), 0) / (SELECT SUM(pt.estimated_hours) FROM project_tasks pt WHERE pt.project_id = p.id)) * 100, 2)
+        ELSE 0
+      END as hours_completion_percentage
     FROM projects p
     LEFT JOIN users u ON p.project_manager_id = u.id
     LEFT JOIN companies c ON p.client_id = c.id
@@ -131,52 +138,39 @@ async function handlePost(req, res) {
     name,
     description,
     client_id,
-    lead_id,
     status = 'planning',
     priority = 'medium',
     start_date,
     end_date,
-    estimated_hours = 0,
-    budget = 0,
-    project_manager_id,
-    team_members,
-    tags,
-    notes,
-    created_by,
-    project_number // Optional - will be generated if not provided
+    value = 0,
+    created_by
   } = req.body;
-  
-  // Generate a unique project number if not provided
-  const generatedProjectNumber = project_number || `PROJ-${Date.now().toString().slice(-6)}`;
 
   // Validation
   if (!name) {
     return res.status(400).json({ message: 'Project name is required' });
   }
 
+  // Generate project number
+  const project_number = `PROJ-${Date.now().toString().slice(-6)}`;
+
   const query = `
     INSERT INTO projects (
-      project_number, name, description, client_id, lead_id, status, priority, start_date, end_date,
-      estimated_hours, budget, project_manager_id, team_members, tags, notes, created_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      project_number, name, description, client_id, status, priority, 
+      start_date, end_date, value, created_by
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const params = [
-    generatedProjectNumber,
+    project_number,
     name, 
     description || null, 
     client_id || null,
-    lead_id || null,
     status, 
     priority, 
     start_date || null,
     end_date || null,
-    estimated_hours, 
-    budget,
-    project_manager_id || null,
-    team_members ? JSON.stringify(team_members) : null,
-    tags || null, 
-    notes || null, 
+    value,
     created_by || null
   ];
 
@@ -184,15 +178,20 @@ async function handlePost(req, res) {
 
   // Log activity
   if (result.insertId) {
-    await executeQuery(
-      'INSERT INTO project_activities (project_id, activity_type, subject, description, created_by) VALUES (?, ?, ?, ?, ?)',
-      [result.insertId, 'milestone', 'Project created', `Project "${name}" was created`, created_by || null]
-    );
+    try {
+      await executeQuery(
+        'INSERT INTO logs (user_id, action, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?)',
+        [created_by || 1, 'Project created', 'project', result.insertId, `Project "${name}" was created`]
+      );
+    } catch (logError) {
+      console.warn('Failed to log project creation:', logError.message);
+    }
   }
 
   return res.status(201).json({
     message: 'Project created successfully',
-    projectId: result.insertId
+    projectId: result.insertId,
+    projectNumber: project_number
   });
 }
 
@@ -202,11 +201,6 @@ async function handlePut(req, res) {
 
   if (!id) {
     return res.status(400).json({ message: 'Project ID is required' });
-  }
-
-  // Handle team_members JSON conversion
-  if (updateData.team_members && Array.isArray(updateData.team_members)) {
-    updateData.team_members = JSON.stringify(updateData.team_members);
   }
 
   // Build dynamic update query
@@ -228,16 +222,20 @@ async function handlePut(req, res) {
   }
 
   // Log activity
-  if (updateData.status) {
-    await executeQuery(
-      'INSERT INTO project_activities (project_id, activity_type, subject, description, created_by) VALUES (?, ?, ?, ?, ?)',
-      [id, 'status_change', 'Project status updated', `Project status changed to ${updateData.status}`, updated_by]
-    );
-  } else {
-    await executeQuery(
-      'INSERT INTO project_activities (project_id, activity_type, subject, description, created_by) VALUES (?, ?, ?, ?, ?)',
-      [id, 'comment', 'Project updated', `Project information was updated`, updated_by]
-    );
+  try {
+    if (updateData.status) {
+      await executeQuery(
+        'INSERT INTO logs (user_id, action, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?)',
+        [updated_by || 1, 'Project status updated', 'project', id, `Project status changed to ${updateData.status}`]
+      );
+    } else {
+      await executeQuery(
+        'INSERT INTO logs (user_id, action, entity_type, entity_id, details) VALUES (?, ?, ?, ?, ?)',
+        [updated_by || 1, 'Project updated', 'project', id, 'Project information was updated']
+      );
+    }
+  } catch (logError) {
+    console.warn('Failed to log project update:', logError.message);
   }
 
   return res.status(200).json({

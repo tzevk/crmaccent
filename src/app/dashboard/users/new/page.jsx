@@ -1,85 +1,89 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Navbar from '../../../../components/navigation/Navbar.jsx';
+import { User, UserPlus, Mail, Phone, Shield, MapPin, Calendar, Save, X, Eye, EyeOff } from 'lucide-react';
 
-// Import components
-import Navbar from '../../../../components/navigation/Navbar';
-import Breadcrumb from '../../../../components/ui/Breadcrumb';
-
-// Import navigation configuration
-import { navigationItems, getCurrentPageFromPath, handleNavigation, getBreadcrumbItems } from '../../../../config/navigation';
-
-export default function AddUser() {
+export default function CreateUser() {
   const router = useRouter();
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
     first_name: '',
     last_name: '',
-    role: 'user',
+    email: '',
+    phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    role: 'user',
+    department: '',
+    designation: '',
+    address: '',
+    date_of_joining: new Date().toISOString().split('T')[0],
+    status: 'active'
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [isRedirecting, setIsRedirecting] = useState(false);
-  const [currentPage, setCurrentPage] = useState('users/new');
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    // Set current page based on pathname
-    const pathname = window.location.pathname;
-    const page = getCurrentPageFromPath(pathname);
-    setCurrentPage(page);
-  }, []);
-
-  useEffect(() => {
-    // Check authentication
+    // Check authentication status
     const userData = localStorage.getItem('user');
     const isAuthenticated = localStorage.getItem('isAuthenticated');
     
     if (userData && isAuthenticated === 'true') {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-      
-      // Check if user has permission to add users (admin or manager)
-      if (!['admin', 'manager'].includes(parsedUser.role)) {
-        router.push('/dashboard');
-        return;
-      }
     } else {
       router.push('/');
     }
   }, [router]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.first_name.trim()) {
+      newErrors.first_name = 'First name is required';
+    }
+
+    if (!formData.last_name.trim()) {
+      newErrors.last_name = 'Last name is required';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Confirm password is required';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (!formData.role) {
+      newErrors.role = 'Role is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
-    setSuccess('');
 
-    // Validation
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setIsLoading(false);
+    if (!validateForm()) {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setIsLoading(false);
-      return;
-    }
+    setLoading(true);
 
     try {
       const response = await fetch('/api/users', {
@@ -88,189 +92,95 @@ export default function AddUser() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: formData.username,
-          email: formData.email,
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          role: formData.role,
-          password: formData.password
+          ...formData,
+          created_by: user?.id
         }),
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccess(`User "${data.user.username}" created successfully! Redirecting to user list...`);
-        setIsRedirecting(true);
-        
-        console.log('User created:', data.user);
-        
-        // Reset form
-        setFormData({
-          username: '',
-          email: '',
-          first_name: '',
-          last_name: '',
-          role: 'user',
-          password: '',
-          confirmPassword: ''
-        });
-
-        // Redirect to users list after delay
-        setTimeout(() => {
-          router.push('/dashboard/users');
-        }, 2000);
-      } else {
-        setError(data.message || 'Failed to create user');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create user');
       }
+
+      const result = await response.json();
+      
+      alert('User created successfully!');
+      router.push('/dashboard/users');
     } catch (error) {
       console.error('Error creating user:', error);
-      setError('Network error. Please try again.');
+      alert(error.message || 'Failed to create user');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    router.push('/dashboard/users');
-  };
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('authMode');
-    router.push('/');
-  };
-
-  const handleNavigationClick = (href, title) => {
-    handleNavigation(router, href, setCurrentPage);
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
   };
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ 
-        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
-      }}>
-        <div className="spinner"></div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <span className="ml-3 text-lg text-gray-700">Loading...</span>
+        </div>
       </div>
     );
   }
 
-  // Breadcrumb items - using shared configuration
-  const breadcrumbItems = getBreadcrumbItems(currentPage, navigationItems).map(item => ({
-    label: item.title,
-    href: item.href
-  }));
-
   return (
-    <>
-      {/* Navbar */}
-      <Navbar 
-        user={user} 
-        onLogout={handleLogout}
-        navigationItems={navigationItems}
-        onNavigate={handleNavigationClick}
-        currentPage={currentPage}
-      />
+    <div className="min-h-screen bg-gray-50">
+      <Navbar user={user} />
       
-      <div className="min-h-screen p-4" style={{ 
-        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
-      }}>
-        <div className="max-w-4xl mx-auto">
-          {/* Breadcrumb */}
-          <Breadcrumb items={breadcrumbItems} />
-
-          {/* Header */}
-          <div className="mb-8">
-            <div className="glass-card p-6 border-l-4 animate-fade-in" style={{
-              borderLeftColor: '#64126D',
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(10px)',
-              boxShadow: '0 8px 32px rgba(100, 18, 109, 0.1)',
-              borderRadius: '16px'
-            }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold mb-2" style={{ color: '#64126D' }}>
-                    Add New User
-                  </h1>
-                  <p className="text-gray-600">Create a new user account with role-based permissions</p>
-                </div>
-                <button
-                  onClick={handleCancel}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  ← Back to Users
-                </button>
-              </div>
-            </div>
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <UserPlus className="text-blue-600" size={32} />
+            <h1 className="text-3xl font-bold text-gray-900">Create New User</h1>
           </div>
+          <p className="text-gray-600">Add a new user to the system</p>
+        </div>
 
-          {/* Form */}
-          <div className="glass-card p-8 animate-fade-in" style={{
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)',
-            boxShadow: '0 8px 32px rgba(100, 18, 109, 0.1)',
-            borderRadius: '16px'
-          }}>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Error/Success Messages */}
-              {error && (
-                <div className="p-4 border-l-4 border-red-400 rounded-lg animate-fade-in" style={{
-                  background: 'rgba(254, 242, 242, 0.95)',
-                  backdropFilter: 'blur(10px)'
-                }}>
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-red-700">{error}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {success && (
-                <div className="p-4 border-l-4 border-green-400 rounded-lg animate-fade-in" style={{
-                  background: 'rgba(240, 253, 244, 0.95)',
-                  backdropFilter: 'blur(10px)'
-                }}>
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-green-700">{success}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Personal Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Form */}
+        <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+          <form onSubmit={handleSubmit} className="p-6 space-y-8">
+            {/* Basic Information */}
+            <div className="bg-gray-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <User className="h-5 w-5 text-blue-600" />
+                Basic Information
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     First Name *
                   </label>
                   <input
                     type="text"
-                    name="first_name"
                     value={formData.first_name}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.9)'
-                    }}
-                    onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #64126D'}
-                    onBlur={(e) => e.target.style.boxShadow = 'none'}
+                    onChange={(e) => handleInputChange('first_name', e.target.value)}
+                    className={`w-full px-3 py-2 bg-white border rounded-lg text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      errors.first_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
                     placeholder="Enter first name"
                   />
+                  {errors.first_name && (
+                    <p className="mt-1 text-sm text-red-600">{errors.first_name}</p>
+                  )}
                 </div>
 
                 <div>
@@ -279,112 +189,112 @@ export default function AddUser() {
                   </label>
                   <input
                     type="text"
-                    name="last_name"
                     value={formData.last_name}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.9)'
-                    }}
-                    onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #64126D'}
-                    onBlur={(e) => e.target.style.boxShadow = 'none'}
+                    onChange={(e) => handleInputChange('last_name', e.target.value)}
+                    className={`w-full px-3 py-2 bg-white border rounded-lg text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      errors.last_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
                     placeholder="Enter last name"
                   />
+                  {errors.last_name && (
+                    <p className="mt-1 text-sm text-red-600">{errors.last_name}</p>
+                  )}
                 </div>
               </div>
+            </div>
 
-              {/* Account Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Contact Information */}
+            <div className="bg-gray-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Mail className="h-5 w-5 text-green-600" />
+                Contact Information
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Username *
-                  </label>
-                  <input
-                    type="text"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.9)'
-                    }}
-                    onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #64126D'}
-                    onBlur={(e) => e.target.style.boxShadow = 'none'}
-                    placeholder="Enter username"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email *
+                    Email Address *
                   </label>
                   <input
                     type="email"
-                    name="email"
                     value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.9)'
-                    }}
-                    onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #64126D'}
-                    onBlur={(e) => e.target.style.boxShadow = 'none'}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    className={`w-full px-3 py-2 bg-white border rounded-lg text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
                     placeholder="Enter email address"
+                  />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter phone number"
                   />
                 </div>
               </div>
 
-              {/* Role Selection */}
-              <div>
+              <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Role *
+                  <MapPin className="inline h-4 w-4 mr-1" />
+                  Address
                 </label>
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.9)'
-                  }}
-                  onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #64126D'}
-                  onBlur={(e) => e.target.style.boxShadow = 'none'}
-                >
-                  <option value="user">User - Basic access</option>
-                  <option value="manager">Manager - Management features</option>
-                  {user?.role === 'admin' && (
-                    <option value="admin">Admin - Full system access</option>
-                  )}
-                </select>
-                <p className="text-sm text-gray-500 mt-1">
-                  {user?.role !== 'admin' && 'Only admins can create other admin users'}
-                </p>
+                <textarea
+                  value={formData.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  rows="3"
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter address"
+                />
               </div>
+            </div>
 
-              {/* Password Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Security Information */}
+            <div className="bg-gray-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Shield className="h-5 w-5 text-purple-600" />
+                Security Information
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Password *
                   </label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.9)'
-                    }}
-                    onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #64126D'}
-                    onBlur={(e) => e.target.style.boxShadow = 'none'}
-                    placeholder="Enter password (min 6 characters)"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      className={`w-full px-3 py-2 pr-10 bg-white border rounded-lg text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        errors.password ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                      }`}
+                      placeholder="Enter password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                  )}
                 </div>
 
                 <div>
@@ -392,80 +302,127 @@ export default function AddUser() {
                     Confirm Password *
                   </label>
                   <input
-                    type="password"
-                    name="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
                     value={formData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:border-transparent outline-none transition-all"
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.9)'
-                    }}
-                    onFocus={(e) => e.target.style.boxShadow = '0 0 0 2px #64126D'}
-                    onBlur={(e) => e.target.style.boxShadow = 'none'}
+                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    className={`w-full px-3 py-2 bg-white border rounded-lg text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
                     placeholder="Confirm password"
+                  />
+                  {errors.confirmPassword && (
+                    <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Role *
+                </label>
+                <select
+                  value={formData.role}
+                  onChange={(e) => handleInputChange('role', e.target.value)}
+                  className={`w-full px-3 py-2 bg-white border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.role ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                  <option value="manager">Manager</option>
+                  <option value="viewer">Viewer</option>
+                </select>
+                {errors.role && (
+                  <p className="mt-1 text-sm text-red-600">{errors.role}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Work Information */}
+            <div className="bg-gray-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-orange-600" />
+                Work Information
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Department
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.department}
+                    onChange={(e) => handleInputChange('department', e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter department"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Designation
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.designation}
+                    onChange={(e) => handleInputChange('designation', e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter designation"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date of Joining
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.date_of_joining}
+                    onChange={(e) => handleInputChange('date_of_joining', e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
-                  disabled={isLoading || isRedirecting}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Status
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => handleInputChange('status', e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading || isRedirecting}
-                  className="px-8 py-3 font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center"
-                  style={{
-                    background: isLoading || isRedirecting 
-                      ? 'linear-gradient(135deg, #86288F 0%, #64126D 100%)'
-                      : 'linear-gradient(135deg, #64126D 0%, #86288F 100%)',
-                    color: 'white',
-                    boxShadow: '0 4px 16px rgba(100, 18, 109, 0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isLoading && !isRedirecting) {
-                      e.target.style.transform = 'translateY(-2px)';
-                      e.target.style.boxShadow = '0 8px 25px rgba(100, 18, 109, 0.4)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isLoading && !isRedirecting) {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = '0 4px 16px rgba(100, 18, 109, 0.3)';
-                    }
-                  }}
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="spinner-small mr-3"></div>
-                      Creating User...
-                    </>
-                  ) : isRedirecting ? (
-                    <>
-                      <div className="spinner-small mr-3"></div>
-                      Redirecting...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      Create User
-                    </>
-                  )}
-                </button>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="suspended">Suspended</option>
+                </select>
               </div>
-            </form>
-          </div>
+            </div>
+
+            {/* Form Actions */}
+            <div className="flex items-center justify-end gap-4 pt-6 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => router.push('/dashboard/users')}
+                className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <X className="h-4 w-4" />
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Save className="h-4 w-4" />
+                {loading ? 'Creating...' : 'Create User'}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
-    </>
+    </div>
   );
 }

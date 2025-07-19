@@ -1,18 +1,22 @@
 // Shared navigation configuration for the CRM dashboard
 export const navigationItems = [
   {
-    id: 'leads',
-    title: 'Leads',
-    icon: '👥',
+    id: 'dashboard',
+    title: 'Dashboard',
+    icon: '🏠',
+    href: '/dashboard',
+  },
+  {
+    id: 'masters',
+    title: 'Masters',
+    icon: '�️',
     submenus: [
-      { title: 'All Leads', href: '/dashboard/leads' },
-      { title: 'New Lead', href: '/dashboard/leads/new' },
-      { title: 'Lead Sources', href: '/dashboard/leads/sources' },
-      { title: 'Lead Status', href: '/dashboard/leads/status' },
-      { title: 'Lead Categories', href: '/dashboard/leads/categories' },
-      { title: 'Lead Reports', href: '/dashboard/leads/reports' },
-      { title: 'Import Leads', href: '/dashboard/leads/import' },
-      { title: 'Export Leads', href: '/dashboard/leads/export' }
+      { title: 'All Masters', href: '/dashboard/masters' },
+      { title: 'Companies', href: '/dashboard/companies' },
+      { title: 'Activities', href: '/dashboard/masters/activities' },
+      { title: 'Projects', href: '/dashboard/masters/projects' },
+      { title: 'Disciplines', href: '/dashboard/masters/disciplines' },
+      { title: 'Lead Sources', href: '/dashboard/masters/lead-sources' }
     ]
   },
   {
@@ -21,28 +25,65 @@ export const navigationItems = [
     icon: '📁',
     submenus: [
       { title: 'All Projects', href: '/dashboard/projects' },
-      { title: 'New Project', href: '/dashboard/projects/new' },
-      { title: 'Project Templates', href: '/dashboard/projects/templates' },
-      { title: 'Project Categories', href: '/dashboard/projects/categories' },
-      { title: 'Project Status', href: '/dashboard/projects/status' },
-      { title: 'Project Reports', href: '/dashboard/projects/reports' },
-      { title: 'Project Timeline', href: '/dashboard/projects/timeline' },
-      { title: 'Resource Allocation', href: '/dashboard/projects/resources' }
+      { title: 'Add Project', href: '/dashboard/projects/add' },
+      { title: 'Task Manager', href: '/dashboard/projects/tasks' },
+      { title: 'Manhours Tracker', href: '/dashboard/projects/manhours' },
+      { title: 'Timeline View', href: '/dashboard/projects/timelines' }
+    ]
+  },
+  {
+    id: 'leads',
+    title: 'Leads',
+    icon: '👥',
+    submenus: [
+      { title: 'All Leads', href: '/dashboard/leads' },
+      { title: 'Add Lead', href: '/dashboard/leads/add' },
+      { title: 'Import Leads', href: '/dashboard/leads/import' },
+      { title: 'Outreach', href: '/dashboard/outreach' }
+    ]
+  },
+  {
+    id: 'reports',
+    title: 'Reports',
+    icon: '�',
+    submenus: [
+      { title: 'Lead Reports', href: '/dashboard/reports/leads' },
+      { title: 'Employee Reports', href: '/dashboard/reports/employees' },
+      { title: 'Project Reports', href: '/dashboard/reports/projects' },
+      { title: 'Financial Reports', href: '/dashboard/reports/financial' }
+    ]
+  },
+  {
+    id: 'employees',
+    title: 'Employees',
+    icon: '👨‍💼',
+    submenus: [
+      { title: 'All Employees', href: '/dashboard/employees' },
+      { title: 'Add Employee', href: '/dashboard/employees/add' },
+      { title: 'Departments', href: '/dashboard/employees/departments' },
+      { title: 'Designations', href: '/dashboard/employees/designations' }
     ]
   },
   {
     id: 'users',
-    title: 'User Management',
+    title: 'Users',
     icon: '👤',
     submenus: [
       { title: 'All Users', href: '/dashboard/users' },
-      { title: 'Add User', href: '/dashboard/users/new' },
-      { title: 'User Roles', href: '/dashboard/users/roles' },
-      { title: 'Permissions', href: '/dashboard/users/permissions' },
-      { title: 'User Groups', href: '/dashboard/users/groups' },
-      { title: 'User Activity', href: '/dashboard/users/activity' },
-      { title: 'User Reports', href: '/dashboard/users/reports' },
-      { title: 'Account Settings', href: '/dashboard/users/settings' }
+      { title: 'Create User', href: '/dashboard/users/new' },
+      { title: 'Roles', href: '/dashboard/users/roles' },
+      { title: 'Permissions', href: '/dashboard/users/permissions' }
+    ]
+  },
+  {
+    id: 'settings',
+    title: 'Settings',
+    icon: '⚙️',
+    submenus: [
+      { title: 'Company Profile', href: '/dashboard/settings/company' },
+      { title: 'Email Templates', href: '/dashboard/settings/email-templates' },
+      { title: 'System Settings', href: '/dashboard/settings/system' },
+      { title: 'Security', href: '/dashboard/settings/security' }
     ]
   }
 ];

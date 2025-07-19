@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../../../components/navigation/Navbar.jsx';
+import TimeTracker from '../../../../components/projects/TimeTracker.jsx';
+import ProjectTimeline from '../../../../components/projects/ProjectTimeline.jsx';
 import projectsAPI from '../../../../utils/projectsAPI.js';
 import { 
   Briefcase, ArrowLeft, Calendar, FileText, ClipboardList, Tag, 
   Pencil, Trash2, Users, Clock, CheckCircle, AlertCircle, 
-  Plus, ChevronDown, ChevronUp
+  Plus, ChevronDown, ChevronUp, Timer, Timeline
 } from 'lucide-react';
 
 export default function ProjectDetail({ params: paramsPromise }) {
@@ -26,6 +28,7 @@ export default function ProjectDetail({ params: paramsPromise }) {
   const [showActivities, setShowActivities] = useState(true);
   const [showTeam, setShowTeam] = useState(true);
   const [showDocuments, setShowDocuments] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     // Check authentication status
@@ -407,6 +410,72 @@ export default function ProjectDetail({ params: paramsPromise }) {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Tabs Section */}
+        <div className="bg-white rounded-lg shadow-sm border mb-6">
+          <div className="border-b">
+            <div className="flex space-x-6 px-6">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'overview'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab('time-tracking')}
+                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
+                  activeTab === 'time-tracking'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Timer className="h-4 w-4" />
+                Time Tracking
+              </button>
+              <button
+                onClick={() => setActiveTab('timeline')}
+                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
+                  activeTab === 'timeline'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Timeline className="h-4 w-4" />
+                Timeline
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                <div className="text-center py-12">
+                  <CheckCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Project Overview</h3>
+                  <p className="text-gray-600">Project details are shown in the cards above. Use the other tabs to track time and view timeline.</p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'time-tracking' && (
+              <TimeTracker 
+                projectId={id} 
+                onTimeLogged={fetchProjectDetails}
+              />
+            )}
+
+            {activeTab === 'timeline' && (
+              <ProjectTimeline 
+                projectId={id}
+                showAllProjects={false}
+              />
+            )}
           </div>
         </div>
       </div>

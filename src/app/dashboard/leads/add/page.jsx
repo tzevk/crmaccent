@@ -16,11 +16,13 @@ import {
   Hash,
   MapPin,
   FileText,
-  Activity
+  Activity,
+  Plus
 } from 'lucide-react';
 
 // Import components
 import Navbar from '../../../../components/navigation/Navbar.jsx';
+import QuickAddCompany from '../../../../components/leads/QuickAddCompany.jsx';
 // Import API utilities
 import leadsAPI from '../../../../utils/leadsAPI.js';
 
@@ -30,6 +32,7 @@ export default function AddLeadPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [companiesLoading, setCompaniesLoading] = useState(true);
   const [companies, setCompanies] = useState([]);
+  const [showQuickAddCompany, setShowQuickAddCompany] = useState(false);
   const [formData, setFormData] = useState({
     sr_no: '', // Will be auto-generated
     enquiry_no: '', // Will be auto-generated
@@ -110,6 +113,15 @@ export default function AddLeadPage() {
     } finally {
       setCompaniesLoading(false);
     }
+  };
+
+  const handleCompanyAdded = (newCompany) => {
+    // Add new company to the list
+    setCompanies(prev => [...prev, newCompany]);
+    // Select the newly added company
+    setFormData(prev => ({ ...prev, company_name: newCompany.name }));
+    // Close the modal
+    setShowQuickAddCompany(false);
   };
 
   const handleInputChange = (e) => {
@@ -296,10 +308,20 @@ export default function AddLeadPage() {
             {/* Company and Contact */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Building size={16} className="inline mr-1" />
-                  Company Name *
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    <Building size={16} className="inline mr-1" />
+                    Company Name *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickAddCompany(true)}
+                    className="inline-flex items-center gap-1 text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white px-3 py-1.5 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium shadow-sm"
+                  >
+                    <Plus size={14} />
+                    Quick Add
+                  </button>
+                </div>
                 <select
                   name="company_name"
                   value={formData.company_name}
@@ -545,6 +567,14 @@ export default function AddLeadPage() {
             </button>
           </div>
         </form>
+
+        {/* Quick Add Company Modal */}
+        {showQuickAddCompany && (
+          <QuickAddCompany 
+            onCompanyAdded={handleCompanyAdded}
+            onClose={() => setShowQuickAddCompany(false)}
+          />
+        )}
       </div>
     </div>
   );

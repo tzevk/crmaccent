@@ -216,12 +216,20 @@ export default function AllProjects() {
                 </select>
               </div>
             </div>
-            <Link href="/dashboard/projects/add">
-              <button className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
-                <Plus size={16} />
-                New Project
-              </button>
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/dashboard/projects/timelines">
+                <button className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                  <Calendar size={16} />
+                  Timeline View
+                </button>
+              </Link>
+              <Link href="/dashboard/projects/add">
+                <button className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                  <Plus size={16} />
+                  New Project
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
 

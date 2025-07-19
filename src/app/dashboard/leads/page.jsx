@@ -25,12 +25,11 @@ import {
 } from 'lucide-react';
 
 // Import components
-import Navbar from '../../../components/navigation/Navbar.jsx';
+import Navbar from '../../../components/navigation/Navbar';
+import LeadsImport from '../../../components/leads/LeadsImport';
 // Import API utilities
-import leadsAPI from '../../../utils/leadsAPI.js';
+import leadsAPI from '../../../utils/leadsAPI';
 
-// Remove demo data - will be replaced with real API calls
-// const demoLeads = [];
 
 export default function LeadsPage() {
   const router = useRouter();
@@ -44,6 +43,7 @@ export default function LeadsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalLeads, setTotalLeads] = useState(0);
   const [leadsPerPage, setLeadsPerPage] = useState(10);
+  const [showLeadsImport, setShowLeadsImport] = useState(false);
 
   useEffect(() => {
     // Check authentication
@@ -83,8 +83,8 @@ export default function LeadsPage() {
       if (response && response.leads) {
         setLeads(response.leads);
         setCurrentPage(response.pagination?.currentPage || page);
-        setTotalPages(response.pagination?.totalPages || Math.ceil((response.pagination?.totalCount || leads.length) / leadsPerPage));
-        setTotalLeads(response.pagination?.totalCount || leads.length);
+        setTotalPages(response.pagination?.totalPages || Math.ceil((response.pagination?.totalCount || response.leads.length) / leadsPerPage));
+        setTotalLeads(response.pagination?.totalCount || response.leads.length);
       } else {
         console.error('Failed to load leads:', response);
         setLeads([]);
@@ -155,14 +155,27 @@ export default function LeadsPage() {
 
   // Action handlers
   const handleViewLead = (leadId) => {
+    if (!leadId) {
+      console.error('Lead ID is undefined');
+      return;
+    }
     router.push(`/dashboard/leads/${leadId}`);
   };
 
   const handleEditLead = (leadId) => {
+    if (!leadId) {
+      console.error('Lead ID is undefined');
+      return;
+    }
     router.push(`/dashboard/leads/${leadId}/edit`);
   };
 
   const handleDeleteLead = async (leadId) => {
+    if (!leadId) {
+      console.error('Lead ID is undefined');
+      return;
+    }
+    
     if (confirm(`Are you sure you want to delete this lead?`)) {
       try {
         setIsLoading(true);
@@ -180,21 +193,19 @@ export default function LeadsPage() {
 
   const handleImport = () => {
     router.push('/dashboard/leads/import');
-  };
-
-  const handleExport = () => {
+  };  const handleExport = () => {
     if (leads.length === 0) {
       alert('No leads to export');
       return;
     }
-    
+
     // Generate CSV export with the new schema fields
     const csvContent = "data:text/csv;charset=utf-8," + 
       "Sr No,Enquiry No,Year,Company Name,Type,City,Enquiry Date,Enquiry Type,Contact Name,Contact Email,Project Description,Enquiry Status,Project Status\n" +
       filteredLeads.map(lead => 
         `"${lead.sr_no || ''}","${lead.enquiry_no || ''}","${lead.year || ''}","${lead.company_name || ''}","${lead.type || ''}","${lead.city || ''}","${lead.enquiry_date || ''}","${lead.enquiry_type || ''}","${lead.contact_name || ''}","${lead.contact_email || ''}","${lead.project_description || ''}","${lead.enquiry_status || ''}","${lead.project_status || ''}"`
       ).join("\n");
-    
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -202,6 +213,13 @@ export default function LeadsPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleImportComplete = (importedCount) => {
+    // Refresh the leads list after import
+    loadLeads();
+    setShowLeadsImport(false);
+    alert(`Successfully imported ${importedCount} leads!`);
   };
 
   if (!user) {
@@ -229,13 +247,22 @@ export default function LeadsPage() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Lead Management</h1>
               <p className="text-gray-600">Manage and track your sales leads</p>
             </div>
-            <Link
-              href="/dashboard/leads/add"
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Add New Lead
-            </Link>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowLeadsImport(true)}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Import Leads
+              </button>
+              <Link
+                href="/dashboard/leads/add"
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Add New Lead
+              </Link>
+            </div>
           </div>
 
           {/* Stats Cards */}
@@ -412,7 +439,7 @@ export default function LeadsPage() {
                   </tr>
                 ) : (
                   filteredLeads.map((lead) => (
-                    <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <tr key={lead.id || Math.random()} className="hover:bg-gray-50/50 transition-colors group">
                       <td className="px-6 py-4">
                         <div className="space-y-1">
                           <div className="font-medium text-gray-900">#{lead.sr_no || 'N/A'}</div>
@@ -471,27 +498,33 @@ export default function LeadsPage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Link 
-                            href={`/dashboard/leads/${lead.id}`}
-                            className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                            title="View Lead"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Link>
-                          <Link 
-                            href={`/dashboard/leads/${lead.id}/edit`}
-                            className="p-2 text-gray-400 hover:text-green-600 transition-colors"
-                            title="Edit Lead"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Link>
-                          <button 
-                            onClick={() => handleDeleteLead(lead.id)}
-                            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                            title="Delete Lead"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {lead.id ? (
+                            <>
+                              <Link 
+                                href={`/dashboard/leads/${lead.id}`}
+                                className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                                title="View Lead"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Link>
+                              <Link 
+                                href={`/dashboard/leads/${lead.id}/edit`}
+                                className="p-2 text-gray-400 hover:text-green-600 transition-colors"
+                                title="Edit Lead"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Link>
+                              <button 
+                                onClick={() => handleDeleteLead(lead.id)}
+                                className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                                title="Delete Lead"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-xs text-gray-400">No actions available</span>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -567,6 +600,14 @@ export default function LeadsPage() {
             </div>
           </Link>
         </div>
+
+        {/* Leads Import Modal */}
+        {showLeadsImport && (
+          <LeadsImport 
+            onImportComplete={handleImportComplete}
+            onClose={() => setShowLeadsImport(false)}
+          />
+        )}
       </div>
     </div>
   );

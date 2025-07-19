@@ -13,11 +13,12 @@ export default async function handler(req, res) {
     
     // Get current date components
     const now = new Date();
-    const year = now.getFullYear().toString().slice(-2); // Last two digits of year
+    const year = now.getFullYear().toString(); // Full year
     const month = String(now.getMonth() + 1).padStart(2, '0');
     
-    // Format: PRJ-YY-MM-XXXX where XXXX is a sequential number
-    const prefix = `PRJ-${year}-${month}-`;
+    // Format: 519-MM-YYYY-XXX where XXX is a sequential number
+    const baseNumber = 519;
+    const prefix = `${baseNumber}-${month}-${year}-`;
     
     // Find the last project number with this prefix
     const [lastProjects] = await db.execute(
@@ -30,15 +31,27 @@ export default async function handler(req, res) {
     if (lastProjects.length > 0) {
       // Extract the sequence number from the last project number
       const lastProjectNumber = lastProjects[0].project_number;
-      const lastSequence = parseInt(lastProjectNumber.split('-')[3], 10);
-      sequenceNumber = lastSequence + 1;
+      const parts = lastProjectNumber.split('-');
+      
+      // If the format is 519-MM-YYYY-XXX-name or 519-MM-YYYY-XXX
+      if (parts.length >= 4) {
+        // Try to extract the sequence number
+        const match = parts[3].match(/^(\d+)/);
+        if (match) {
+          sequenceNumber = parseInt(match[1], 10) + 1;
+        }
+      }
     }
     
     // Format the sequence number with leading zeros
-    const formattedSequence = String(sequenceNumber).padStart(4, '0');
+    const formattedSequence = String(sequenceNumber).padStart(3, '0');
     const projectNumber = `${prefix}${formattedSequence}`;
     
-    return res.status(200).json({ project_number: projectNumber });
+    return res.status(200).json({ 
+      project_number: projectNumber,
+      prefix: prefix,
+      base_number: baseNumber
+    });
   } catch (error) {
     console.error('Error generating project number:', error);
     return res.status(500).json({ message: 'Failed to generate project number' });
