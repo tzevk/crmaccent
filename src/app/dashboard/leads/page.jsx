@@ -6,9 +6,6 @@ import Link from 'next/link';
 import { 
   Plus, 
   Search, 
-  Filter, 
-  Download, 
-  Upload,
   Eye,
   Edit,
   Trash2,
@@ -21,12 +18,13 @@ import {
   Target,
   Hash,
   User,
-  MapPin
+  MapPin,
+  RefreshCw,
+  X
 } from 'lucide-react';
 
 // Import components
 import Navbar from '../../../components/navigation/Navbar';
-import LeadsImport from '../../../components/leads/LeadsImport';
 // Import API utilities
 import leadsAPI from '../../../utils/leadsAPI';
 
@@ -43,7 +41,20 @@ export default function LeadsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalLeads, setTotalLeads] = useState(0);
   const [leadsPerPage, setLeadsPerPage] = useState(10);
-  const [showLeadsImport, setShowLeadsImport] = useState(false);
+  
+  // Dynamic stats state
+  const [stats, setStats] = useState({
+    total: 0,
+    hot: 0,
+    converted: 0,
+    lost: 0,
+    totalValue: 0,
+    newToday: 0,
+    followUpDue: 0,
+    recentActivity: 0
+  });
+  
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     // Check authentication
@@ -54,17 +65,25 @@ export default function LeadsPage() {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
       loadLeads(1); // Start at page 1
+      loadStats(); // Load comprehensive stats
     } else {
       router.push('/');
     }
-  }, [router]);
+  }, [router, refreshKey]);
   
   // Reload leads when filters change
   useEffect(() => {
     if (user) {
       loadLeads(1); // Reset to page 1 when filters change
     }
-  }, [searchTerm, statusFilter, sourceFilter]);
+  }, [searchTerm, statusFilter, sourceFilter, user]);
+
+  // Reload stats when data changes
+  useEffect(() => {
+    if (user) {
+      loadStats();
+    }
+  }, [leads, user]);
 
   const loadLeads = async (page = 1) => {
     try {
@@ -145,12 +164,78 @@ export default function LeadsPage() {
     return matchesSearch && matchesStatus && matchesSource;
   });
 
-  // Calculate stats
-  const stats = {
-    total: leads.length,
-    hot: leads.filter(l => l.enquiry_status === 'New' || l.enquiry_status === 'Working').length,
-    converted: leads.filter(l => l.enquiry_status === 'Won').length,
-    totalValue: leads.reduce((sum, lead) => sum + (Number(lead.value) || 0), 0)
+  // Load comprehensive stats from API
+  const loadStats = async () => {
+    try {
+      // Use the dedicated stats endpoint for efficiency
+      const response = await fetch('/api/leads/stats');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data && data.summary) {
+        const summary = data.summary;
+        
+        setStats({
+          total: summary.total_leads || 0,
+          hot: (summary.active_leads || 0) + (summary.new_leads || 0) + (summary.followup_required || 0),
+          converted: summary.won_leads || 0,
+          lost: summary.lost_leads || 0,
+          totalValue: summary.total_value || 0,
+          newToday: summary.new_today || 0,
+          followUpDue: summary.followup_required || 0,
+          recentActivity: summary.recent_activity || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error loading stats:', error);
+      // Fallback to basic stats calculation
+      try {
+        const response = await leadsAPI.getLeads({
+          limit: 100,
+          page: 1,
+          sortBy: 'created_at',
+          sortOrder: 'DESC',
+        });
+
+        if (response && response.leads) {
+          const allLeads = response.leads;
+          const today = new Date().toDateString();
+          const totalCount = response.pagination?.totalCount || allLeads.length;
+          
+          setStats({
+            total: totalCount,
+            hot: allLeads.filter(l => ['New', 'Working', 'Follow-up'].includes(l.enquiry_status)).length,
+            converted: allLeads.filter(l => l.enquiry_status === 'Won').length,
+            lost: allLeads.filter(l => l.enquiry_status === 'Lost').length,
+            totalValue: 0,
+            newToday: allLeads.filter(l => new Date(l.created_at).toDateString() === today).length,
+            followUpDue: allLeads.filter(l => l.followup1_date && new Date(l.followup1_date) <= new Date()).length,
+            recentActivity: allLeads.filter(l => {
+              const updatedDate = new Date(l.updated_at);
+              const twoDaysAgo = new Date();
+              twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+              return updatedDate >= twoDaysAgo;
+            }).length
+          });
+        }
+      } catch (fallbackError) {
+        console.error('Fallback stats loading failed:', fallbackError);
+        setStats({
+          total: 0,
+          hot: 0,
+          converted: 0,
+          lost: 0,
+          totalValue: 0,
+          newToday: 0,
+          followUpDue: 0,
+          recentActivity: 0
+        });
+      }
+    }
   };
 
   // Action handlers
@@ -191,35 +276,10 @@ export default function LeadsPage() {
     }
   };
 
-  const handleImport = () => {
-    router.push('/dashboard/leads/import');
-  };  const handleExport = () => {
-    if (leads.length === 0) {
-      alert('No leads to export');
-      return;
-    }
-
-    // Generate CSV export with the new schema fields
-    const csvContent = "data:text/csv;charset=utf-8," + 
-      "Sr No,Enquiry No,Year,Company Name,Type,City,Enquiry Date,Enquiry Type,Contact Name,Contact Email,Project Description,Enquiry Status,Project Status\n" +
-      filteredLeads.map(lead => 
-        `"${lead.sr_no || ''}","${lead.enquiry_no || ''}","${lead.year || ''}","${lead.company_name || ''}","${lead.type || ''}","${lead.city || ''}","${lead.enquiry_date || ''}","${lead.enquiry_type || ''}","${lead.contact_name || ''}","${lead.contact_email || ''}","${lead.project_description || ''}","${lead.enquiry_status || ''}","${lead.project_status || ''}"`
-      ).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `leads_export_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleImportComplete = (importedCount) => {
-    // Refresh the leads list after import
-    loadLeads();
-    setShowLeadsImport(false);
-    alert(`Successfully imported ${importedCount} leads!`);
+  const refreshData = () => {
+    setRefreshKey(prev => prev + 1);
+    loadLeads(currentPage);
+    loadStats();
   };
 
   if (!user) {
@@ -245,16 +305,23 @@ export default function LeadsPage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Lead Management</h1>
-              <p className="text-gray-600">Manage and track your sales leads</p>
+              <p className="text-gray-600">
+                Manage and track your sales leads • 
+                <span className="text-green-600 font-medium"> {stats.total} Total</span> • 
+                <span className="text-orange-600 font-medium"> {stats.hot} Active</span> • 
+                <span className="text-purple-600 font-medium"> {stats.newToday} New Today</span>
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setShowLeadsImport(true)}
-                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                onClick={refreshData}
+                className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                title="Refresh data"
               >
-                <Upload className="w-4 h-4 mr-2" />
-                Import Leads
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh
               </button>
+
               <Link
                 href="/dashboard/leads/add"
                 className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
@@ -265,13 +332,14 @@ export default function LeadsPage() {
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {/* Enhanced Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Leads</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.total.toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1">All time leads</p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-full">
                   <Users className="w-6 h-6 text-blue-600" />
@@ -282,11 +350,12 @@ export default function LeadsPage() {
             <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Hot Leads</p>
-                  <p className="text-3xl font-bold text-red-600">{stats.hot}</p>
+                  <p className="text-sm font-medium text-gray-600">Active Leads</p>
+                  <p className="text-3xl font-bold text-orange-600">{stats.hot.toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1">New, Working, Follow-up</p>
                 </div>
-                <div className="p-3 bg-red-100 rounded-full">
-                  <TrendingUp className="w-6 h-6 text-red-600" />
+                <div className="p-3 bg-orange-100 rounded-full">
+                  <TrendingUp className="w-6 h-6 text-orange-600" />
                 </div>
               </div>
             </div>
@@ -295,7 +364,8 @@ export default function LeadsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Converted</p>
-                  <p className="text-3xl font-bold text-green-600">{stats.converted}</p>
+                  <p className="text-3xl font-bold text-green-600">{stats.converted.toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1">Successfully won</p>
                 </div>
                 <div className="p-3 bg-green-100 rounded-full">
                   <Target className="w-6 h-6 text-green-600" />
@@ -306,11 +376,63 @@ export default function LeadsPage() {
             <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Value</p>
-                  <p className="text-3xl font-bold text-purple-600">₹{stats.totalValue.toLocaleString()}</p>
+                  <p className="text-sm font-medium text-gray-600">New Today</p>
+                  <p className="text-3xl font-bold text-purple-600">{stats.newToday.toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1">Added today</p>
                 </div>
                 <div className="p-3 bg-purple-100 rounded-full">
-                  <DollarSign className="w-6 h-6 text-purple-600" />
+                  <Plus className="w-6 h-6 text-purple-600" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Secondary Stats Row */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white/50 backdrop-blur-sm rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <X className="w-4 h-4 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Lost</p>
+                  <p className="text-lg font-semibold text-gray-900">{stats.lost}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/50 backdrop-blur-sm rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-yellow-100 rounded-lg">
+                  <Calendar className="w-4 h-4 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Follow-up Due</p>
+                  <p className="text-lg font-semibold text-gray-900">{stats.followUpDue}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/50 backdrop-blur-sm rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <RefreshCw className="w-4 h-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Recent Activity</p>
+                  <p className="text-lg font-semibold text-gray-900">{stats.recentActivity}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/50 backdrop-blur-sm rounded-lg p-4 border border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <DollarSign className="w-4 h-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Total Value</p>
+                  <p className="text-lg font-semibold text-gray-900">₹{stats.totalValue.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -386,23 +508,7 @@ export default function LeadsPage() {
                 </select>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                <button 
-                  onClick={handleImport}
-                  className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Import
-                </button>
-                <button 
-                  onClick={handleExport}
-                  className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
-                </button>
-              </div>
+
             </div>
           </div>
         </div>
@@ -594,20 +700,12 @@ export default function LeadsPage() {
             <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300 group-hover:border-green-300">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Import Leads</h3>
-                <Upload className="w-6 h-6 text-green-600" />
+                <Plus className="w-6 h-6 text-green-600" />
               </div>
               <p className="text-gray-600">Bulk import leads from CSV or other sources</p>
             </div>
           </Link>
         </div>
-
-        {/* Leads Import Modal */}
-        {showLeadsImport && (
-          <LeadsImport 
-            onImportComplete={handleImportComplete}
-            onClose={() => setShowLeadsImport(false)}
-          />
-        )}
       </div>
     </div>
   );

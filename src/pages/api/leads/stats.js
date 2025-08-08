@@ -61,7 +61,10 @@ export default async function handler(req, res) {
         COUNT(CASE WHEN enquiry_status = 'Lost' THEN 1 END) as lost_leads,
         COUNT(CASE WHEN enquiry_status = 'Working' THEN 1 END) as active_leads,
         COUNT(CASE WHEN enquiry_status = 'New' THEN 1 END) as new_leads,
-        COUNT(CASE WHEN followup1_date IS NOT NULL OR followup2_date IS NOT NULL OR followup3_date IS NOT NULL THEN 1 END) as leads_with_followup
+        COUNT(CASE WHEN followup1_date IS NOT NULL OR followup2_date IS NOT NULL OR followup3_date IS NOT NULL THEN 1 END) as leads_with_followup,
+        COUNT(CASE WHEN DATE(created_at) = CURDATE() THEN 1 END) as new_today,
+        0 as total_value,
+        COUNT(CASE WHEN DATE(updated_at) >= DATE_SUB(CURDATE(), INTERVAL 2 DAY) THEN 1 END) as recent_activity
       FROM leads
     `);
 
@@ -114,6 +117,9 @@ export default async function handler(req, res) {
         lost_leads: totals.lost_leads,
         leads_with_followup: totals.leads_with_followup,
         followup_required: followupRequired[0].count,
+        new_today: totals.new_today,
+        total_value: totals.total_value,
+        recent_activity: totals.recent_activity,
         conversion_rate: parseFloat(conversionRate)
       },
       enquiryStatusBreakdown: enquiryStatusStats.reduce((acc, item) => {

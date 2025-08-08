@@ -1,5 +1,5 @@
 import { executeQuery } from '../../../lib/db';
-import formidable from 'formidable';
+import { IncomingForm } from 'formidable';
 import * as XLSX from 'xlsx';
 import fs from 'fs';
 
@@ -15,10 +15,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  const form = formidable({ multiples: false });
+  const form = new IncomingForm({ multiples: false });
 
   try {
-    const [fields, files] = await form.parse(req);
+    const [fields, files] = await new Promise((resolve, reject) => {
+      form.parse(req, (err, fields, files) => {
+        if (err) reject(err);
+        else resolve([fields, files]);
+      });
+    });
+    
     const file = Array.isArray(files.file) ? files.file[0] : files.file;
 
     if (!file) {
@@ -29,10 +35,15 @@ export default async function handler(req, res) {
     }
 
     // Check file extension
-    const fileName = file.originalFilename || '';
+    const fileName = file.originalFilename || file.name || '';
+    console.log('Uploaded file:', fileName);
+    console.log('File path:', file.filepath || file.path);
+    console.log('File size:', file.size);
+    
     const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || fileName.endsWith('.csv');
     
     if (!isExcel) {
+      console.log('Invalid file type. Filename:', fileName);
       return res.status(400).json({ 
         success: false,
         message: 'Please upload a valid Excel file (.xlsx, .xls) or CSV file' 
@@ -41,18 +52,27 @@ export default async function handler(req, res) {
 
     // Read the file
     const filePath = file.filepath || file.path;
+    console.log('Processing file at path:', filePath);
     if (!filePath) {
+      console.error('No file path found. File object:', file);
       return res.status(400).json({ 
         success: false,
         message: 'Unable to process uploaded file' 
       });
     }
     
+    console.log('Reading file buffer...');
     const fileBuffer = fs.readFileSync(filePath);
+    console.log('File buffer size:', fileBuffer.length);
+    
+    console.log('Parsing Excel workbook...');
     const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
+    console.log('Sheet name:', sheetName);
+    
     const worksheet = workbook.Sheets[sheetName];
     const jsonData = XLSX.utils.sheet_to_json(worksheet);
+    console.log('Parsed rows:', jsonData.length);
 
     if (jsonData.length === 0) {
       return res.status(400).json({ 
