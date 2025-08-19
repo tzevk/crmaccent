@@ -1,795 +1,444 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../../../components/navigation/Navbar';
-import { UserPlus, Save, ArrowLeft, User, Phone, Mail, Calendar, Building, Briefcase, MapPin, FileText, UserCheck, Key } from 'lucide-react';
+import {
+  ArrowLeft, User, Mail, Phone, MapPin, Calendar,
+  Building, Briefcase, Save, X, Plus, Trash, FileText, Banknote
+} from 'lucide-react';
 
 export default function AddEmployeePage() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
+
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [departments, setDepartments] = useState([]);
-  const [designations, setDesignations] = useState([]);
-  const [managers, setManagers] = useState([]);
-  
-  // Active tab for multi-step form
-  const [activeTab, setActiveTab] = useState('basic');
-  
-  // Create user account toggle
-  const [createUserAccount, setCreateUserAccount] = useState(false);
-  
-  // Form data
+
   const [formData, setFormData] = useState({
-    // Basic Info
     first_name: '',
     last_name: '',
     email: '',
     phone: '',
-    date_of_birth: '',
-    gender: '',
     profile_image: '',
-    
-    // Job Details
     department: '',
     designation: '',
     reporting_manager_id: '',
-    join_date: new Date().toISOString().split('T')[0],
+    join_date: '',
     employment_status: 'active',
-    
-    // Address
+    date_of_birth: '',
+    gender: '',
     address: '',
     city: '',
     state: '',
     postal_code: '',
     country: '',
-    
-    // User Account (optional)
-    create_user_account: false,
-    username: '',
-    password: '',
-    role: 'user',
-    
-    // System fields
-    created_by: null
+    salary: '',
+    employee_code: '',
   });
 
+  const [statutory, setStatutory] = useState({
+    pf_master: { pf_number: '', pf_uan: '', pf_mode: '' },
+    pt: { state: '', registration_no: '' },
+    tds: { pan: '', pan_category: '' },
+    mlwf: { registration_no: '' },
+    esic: { esic_number: '' },
+  });
+
+  const [bank, setBank] = useState({
+    bank_name: '',
+    account_number: '',
+    ifsc: '',
+    branch: '',
+    account_type: '',
+  });
+
+  const [education, setEducation] = useState([]);
+  const [experience, setExperience] = useState([]);
+  const [documents, setDocuments] = useState([]);
+
+  const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
+  const [managers, setManagers] = useState([]);
+
+  const [activeTab, setActiveTab] = useState('personal');
+
   useEffect(() => {
-    const userData = localStorage.getItem('user');
     const isAuthenticated = localStorage.getItem('isAuthenticated');
-    
-    if (userData && isAuthenticated === 'true') {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      setFormData(prev => ({
-        ...prev,
-        created_by: parsedUser.id
-      }));
-      
-      // Fetch departments and designations
-      fetchDepartments();
-      fetchDesignations();
-      fetchManagers();
-    } else {
+    const userData = localStorage.getItem('user');
+    if (isAuthenticated !== 'true' || !userData) {
       router.push('/');
+      return;
     }
+
+    fetchDropdownData();
   }, [router]);
 
-  const fetchDepartments = async () => {
+  const fetchDropdownData = async () => {
     try {
-      const response = await fetch('/api/employees/departments');
-      const data = await response.json();
-      
-      if (response.ok) {
-        setDepartments(data.departments || []);
+      const deptResp = await fetch('/api/employees/departments');
+      if (deptResp.ok) {
+        const d = await deptResp.json();
+        setDepartments(d.departments || []);
       }
-    } catch (error) {
-      console.error('Failed to fetch departments:', error);
-    }
-  };
 
-  const fetchDesignations = async () => {
-    try {
-      const response = await fetch('/api/employees/designations');
-      const data = await response.json();
-      
-      if (response.ok) {
-        setDesignations(data.designations || []);
+      const desigResp = await fetch('/api/employees/designations');
+      if (desigResp.ok) {
+        const d = await desigResp.json();
+        setDesignations(d.designations || []);
       }
-    } catch (error) {
-      console.error('Failed to fetch designations:', error);
-    }
-  };
 
-  const fetchManagers = async () => {
-    try {
-      const response = await fetch('/api/employees?limit=100');
-      const data = await response.json();
-      
-      if (response.ok) {
-        setManagers(data.employees || []);
+      const mgrResp = await fetch('/api/employees?role=manager&limit=100');
+      if (mgrResp.ok) {
+        const m = await mgrResp.json();
+        setManagers(m.employees || []);
       }
-    } catch (error) {
-      console.error('Failed to fetch managers:', error);
+    } catch (err) {
+      console.error('Dropdown fetch error', err);
     }
   };
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    
-    if (name === 'create_user_account') {
-      setCreateUserAccount(checked);
-      setFormData(prev => ({ ...prev, [name]: checked }));
-      return;
-    }
-    
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
-    }));
-    
-    // Auto-generate username if empty and name changes
-    if ((name === 'first_name' || name === 'last_name') && !formData.username && formData.first_name) {
-      const first = formData.first_name.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const last = name === 'last_name' 
-        ? value.toLowerCase().replace(/[^a-z0-9]/g, '')
-        : formData.last_name.toLowerCase().replace(/[^a-z0-9]/g, '');
-      
-      let newUsername = '';
-      
-      if (first && last) {
-        newUsername = `${first}.${last}`;
-      } else if (first) {
-        newUsername = first;
-      }
-      
-      if (newUsername) {
-        setFormData(prev => ({ ...prev, username: newUsername }));
-      }
-    }
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
-  
-  const validateForm = () => {
-    // Basic validation
-    if (!formData.first_name || !formData.last_name || !formData.email) {
-      setError('First name, last name, and email are required');
-      return false;
-    }
-    
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
-      return false;
-    }
-    
-    // User account validation if creating one
-    if (createUserAccount) {
-      if (!formData.username || !formData.password) {
-        setError('Username and password are required if creating a user account');
-        return false;
-      }
-      
-      if (formData.password.length < 6) {
-        setError('Password must be at least 6 characters');
-        return false;
-      }
-    }
-    
-    return true;
+
+  const handleStatutoryChange = (group, field, value) => {
+    setStatutory(prev => ({ ...prev, [group]: { ...prev[group], [field]: value } }));
+  };
+
+  const handleBankChange = (field, value) => {
+    setBank(prev => ({ ...prev, [field]: value }));
+  };
+
+  const addEducation = () => setEducation(prev => [...prev, { degree: '', institution: '', start_year: '', end_year: '', description: '' }]);
+  const updateEducation = (i, field, value) => setEducation(prev => prev.map((it, idx) => idx === i ? { ...it, [field]: value } : it));
+  const removeEducation = (i) => setEducation(prev => prev.filter((_, idx) => idx !== i));
+
+  const addExperience = () => setExperience(prev => [...prev, { company: '', position: '', start_date: '', end_date: '', description: '' }]);
+  const updateExperience = (i, field, value) => setExperience(prev => prev.map((it, idx) => idx === i ? { ...it, [field]: value } : it));
+  const removeExperience = (i) => setExperience(prev => prev.filter((_, idx) => idx !== i));
+
+  const handleDocumentUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    const newDocs = files.map(f => ({ name: f.name, size: f.size, file: f }));
+    setDocuments(prev => [...prev, ...newDocs]);
+  };
+
+  const removeDocument = (index) => setDocuments(prev => prev.filter((_, i) => i !== index));
+
+  const handleProfileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // For now store name; server should accept multipart upload in future
+    setFormData(prev => ({ ...prev, profile_image: file.name }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-    
-    setLoading(true);
+    setSaving(true);
     setError('');
     setSuccess('');
-    
+
     try {
-      const response = await fetch('/api/employees', {
+      const payload = {
+        ...formData,
+        statutory,
+        bank,
+        education,
+        experience,
+        documents: documents.map(d => ({ name: d.name, size: d.size })),
+      };
+
+      const resp = await fetch('/api/employees', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setSuccess('Employee added successfully!');
-        
-        // Reset form
-        setFormData({
-          first_name: '',
-          last_name: '',
-          email: '',
-          phone: '',
-          date_of_birth: '',
-          gender: '',
-          profile_image: '',
-          department: '',
-          designation: '',
-          reporting_manager_id: '',
-          join_date: new Date().toISOString().split('T')[0],
-          employment_status: 'active',
-          address: '',
-          city: '',
-          state: '',
-          postal_code: '',
-          country: '',
-          create_user_account: false,
-          username: '',
-          password: '',
-          role: 'user',
-          created_by: user.id
-        });
-        
-        setCreateUserAccount(false);
-        
-        // Redirect after a short delay
-        setTimeout(() => {
-          router.push('/dashboard/employees');
-        }, 2000);
+
+      const data = await resp.json();
+      if (resp.ok) {
+        setSuccess('Employee added successfully');
+        setTimeout(() => router.push('/dashboard/employees'), 1200);
       } else {
         setError(data.message || 'Failed to add employee');
       }
     } catch (err) {
-      setError('Error adding employee. Please try again.');
       console.error(err);
+      setError('Error adding employee');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
+
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center">
-              <UserPlus className="mr-2" /> Add New Employee
-            </h1>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <div className="mb-4 md:mb-0">
+            <div className="flex items-center mb-2">
+              <Link href="/dashboard/employees" className="text-gray-600 hover:text-gray-800 mr-4">
+                <ArrowLeft size={20} />
+              </Link>
+              <h1 className="text-2xl font-bold">Add Employee</h1>
+            </div>
             <p className="text-gray-600">Create a new employee record</p>
           </div>
-          
-          <Link
-            href="/dashboard/employees"
-            className="flex items-center text-gray-600 hover:text-gray-900"
-          >
-            <ArrowLeft className="mr-1" size={18} /> Back to Employees
-          </Link>
         </div>
-        
-        {/* Error and success messages */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
-        )}
-        
-        {success && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-            {success}
-          </div>
-        )}
-        
-        {/* Form with tabs */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          {/* Tabs */}
-          <div className="flex border-b border-gray-200">
-            <button 
-              className={`px-4 py-3 text-sm font-medium flex items-center ${activeTab === 'basic' 
-                ? 'text-blue-600 border-b-2 border-blue-500' 
-                : 'text-gray-500 hover:text-gray-700'}`}
-              onClick={() => setActiveTab('basic')}
-            >
-              <User className="mr-2" size={16} /> Basic Information
-            </button>
-            
-            <button 
-              className={`px-4 py-3 text-sm font-medium flex items-center ${activeTab === 'job' 
-                ? 'text-blue-600 border-b-2 border-blue-500' 
-                : 'text-gray-500 hover:text-gray-700'}`}
-              onClick={() => setActiveTab('job')}
-            >
-              <Briefcase className="mr-2" size={16} /> Job Details
-            </button>
-            
-            <button 
-              className={`px-4 py-3 text-sm font-medium flex items-center ${activeTab === 'address' 
-                ? 'text-blue-600 border-b-2 border-blue-500' 
-                : 'text-gray-500 hover:text-gray-700'}`}
-              onClick={() => setActiveTab('address')}
-            >
-              <MapPin className="mr-2" size={16} /> Address
-            </button>
-            
-            <button 
-              className={`px-4 py-3 text-sm font-medium flex items-center ${activeTab === 'account' 
-                ? 'text-blue-600 border-b-2 border-blue-500' 
-                : 'text-gray-500 hover:text-gray-700'}`}
-              onClick={() => setActiveTab('account')}
-            >
-              <Key className="mr-2" size={16} /> User Account
-            </button>
-          </div>
-          
-          {/* Form Content */}
-          <form onSubmit={handleSubmit} className="p-6">
-            {/* Basic Information Tab */}
-            {activeTab === 'basic' && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                  <User className="mr-2" size={18} /> Personal Information
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      First Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="first_name"
-                      value={formData.first_name}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="John"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="last_name"
-                      value={formData.last_name}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Doe"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="john.doe@example.com"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="+91 98765 43210"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Date of Birth
-                    </label>
-                    <input
-                      type="date"
-                      name="date_of_birth"
-                      value={formData.date_of_birth}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Gender
-                    </label>
-                    <select
-                      name="gender"
-                      value={formData.gender}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Profile Image URL
-                  </label>
-                  <input
-                    type="text"
-                    name="profile_image"
-                    value={formData.profile_image}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="https://example.com/profile.jpg"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Enter a URL to an image. For a full image upload feature, please use the document upload option.
-                  </p>
-                </div>
-                
-                <div className="flex justify-end">
+
+        {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
+        {success && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">{success}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="bg-white rounded-lg shadow">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex overflow-x-auto">
+                {[
+                  { id: 'personal', label: 'Personal Info', icon: User },
+                  { id: 'employment', label: 'Employment', icon: Briefcase },
+                  { id: 'statutory', label: 'Statutory', icon: FileText },
+                  { id: 'education', label: 'Education', icon: Calendar },
+                  { id: 'experience', label: 'Experience', icon: Building },
+                  { id: 'documents', label: 'Documents/Bank', icon: Banknote },
+                ].map((tab) => (
                   <button
+                    key={tab.id}
                     type="button"
-                    onClick={() => setActiveTab('job')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Next: Job Details
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`py-2 px-4 border-b-2 font-medium text-sm flex items-center ${activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                    <tab.icon size={16} className="mr-2" />
+                    {tab.label}
                   </button>
-                </div>
-              </div>
-            )}
-            
-            {/* Job Details Tab */}
-            {activeTab === 'job' && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                  <Briefcase className="mr-2" size={18} /> Employment Information
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Department
-                    </label>
-                    <select
-                      name="department"
-                      value={formData.department}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select Department</option>
-                      {departments.map((dept) => (
-                        <option key={dept.id} value={dept.name}>
-                          {dept.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Designation/Job Title
-                    </label>
-                    <select
-                      name="designation"
-                      value={formData.designation}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select Designation</option>
-                      {designations.map((desig) => (
-                        <option key={desig.id} value={desig.title}>
-                          {desig.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Reporting Manager
-                    </label>
-                    <select
-                      name="reporting_manager_id"
-                      value={formData.reporting_manager_id}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select Manager</option>
-                      {managers.map((manager) => (
-                        <option key={manager.id} value={manager.id}>
-                          {manager.first_name} {manager.last_name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Join Date
-                    </label>
-                    <input
-                      type="date"
-                      name="join_date"
-                      value={formData.join_date}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Employment Status
-                  </label>
-                  <select
-                    name="employment_status"
-                    value={formData.employment_status}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="active">Active</option>
-                    <option value="on_leave">On Leave</option>
-                    <option value="terminated">Terminated</option>
-                    <option value="resigned">Resigned</option>
-                  </select>
-                </div>
-                
-                <div className="flex justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('basic')}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('address')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Next: Address
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {/* Address Tab */}
-            {activeTab === 'address' && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                  <MapPin className="mr-2" size={18} /> Address Information
-                </h3>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address
-                  </label>
-                  <textarea
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                    rows="3"
-                    className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Street address"
-                  ></textarea>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      City
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Mumbai"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      State/Province
-                    </label>
-                    <input
-                      type="text"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Maharashtra"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Postal/Zip Code
-                    </label>
-                    <input
-                      type="text"
-                      name="postal_code"
-                      value={formData.postal_code}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="400001"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Country
-                    </label>
-                    <input
-                      type="text"
-                      name="country"
-                      value={formData.country}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="India"
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('job')}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('account')}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Next: User Account
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {/* User Account Tab */}
-            {activeTab === 'account' && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                  <Key className="mr-2" size={18} /> User Account
-                </h3>
-                
-                <div className="mb-4">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="create_user_account"
-                      checked={createUserAccount}
-                      onChange={handleChange}
-                      className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm font-medium text-gray-700">
-                      Create a user account for this employee
-                    </span>
-                  </label>
-                  <p className="mt-1 text-xs text-gray-500">
-                    This will allow the employee to log into the system
-                  </p>
-                </div>
-                
-                {createUserAccount && (
-                  <div className="border border-gray-200 rounded-md p-4 bg-gray-50 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Username *
-                        </label>
-                        <input
-                          type="text"
-                          name="username"
-                          value={formData.username}
-                          onChange={handleChange}
-                          required={createUserAccount}
-                          className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="johndoe"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Password *
-                        </label>
-                        <input
-                          type="password"
-                          name="password"
-                          value={formData.password}
-                          onChange={handleChange}
-                          required={createUserAccount}
-                          className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="••••••"
-                        />
-                      </div>
-                    </div>
-                    
+                ))}
+              </nav>
+            </div>
+
+            <div className="p-6">
+              {activeTab === 'personal' && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Role
-                      </label>
-                      <select
-                        name="role"
-                        value={formData.role}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="user">Regular User</option>
-                        <option value="manager">Manager</option>
-                        <option value="admin">Administrator</option>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                      <input name="first_name" required value={formData.first_name} onChange={handleChange} className="w-full px-3 py-2 border rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                      <input name="last_name" required value={formData.last_name} onChange={handleChange} className="w-full px-3 py-2 border rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                      <input type="email" name="email" required value={formData.email} onChange={handleChange} className="w-full px-3 py-2 border rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                      <input name="phone" value={formData.phone} onChange={handleChange} className="w-full px-3 py-2 border rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                      <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} className="w-full px-3 py-2 border rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                      <select name="gender" value={formData.gender} onChange={handleChange} className="w-full px-3 py-2 border rounded">
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
                       </select>
                     </div>
                   </div>
-                )}
-                
-                <div className="flex justify-between pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('address')}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2" size={16} /> Save Employee
-                      </>
-                    )}
-                  </button>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <textarea name="address" rows={3} value={formData.address} onChange={handleChange} className="w-full px-3 py-2 border rounded" />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input type="text" name="city" placeholder="City" value={formData.city} onChange={handleChange} className="px-3 py-2 border rounded" />
+                    <input type="text" name="state" placeholder="State" value={formData.state} onChange={handleChange} className="px-3 py-2 border rounded" />
+                    <input type="text" name="postal_code" placeholder="Postal Code" value={formData.postal_code} onChange={handleChange} className="px-3 py-2 border rounded" />
+                    <input type="text" name="country" placeholder="Country" value={formData.country} onChange={handleChange} className="px-3 py-2 border rounded" />
+                  </div>
                 </div>
-              </div>
-            )}
-          </form>
-        </div>
+              )}
+
+              {activeTab === 'employment' && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Employment Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                      <select name="department" value={formData.department} onChange={handleChange} className="w-full px-3 py-2 border rounded">
+                        <option value="">Select Department</option>
+                        {departments.map((d,i) => <option key={i} value={d.name}>{d.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+                      <select name="designation" value={formData.designation} onChange={handleChange} className="w-full px-3 py-2 border rounded">
+                        <option value="">Select Designation</option>
+                        {designations.map((d,i) => <option key={i} value={d.title}>{d.title}</option>)}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Reporting Manager</label>
+                      <select name="reporting_manager_id" value={formData.reporting_manager_id} onChange={handleChange} className="w-full px-3 py-2 border rounded">
+                        <option value="">Select Manager</option>
+                        {managers.map(m => <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>)}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Join Date</label>
+                      <input type="date" name="join_date" value={formData.join_date} onChange={handleChange} className="w-full px-3 py-2 border rounded" />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Employment Status</label>
+                      <select name="employment_status" value={formData.employment_status} onChange={handleChange} className="w-full px-3 py-2 border rounded">
+                        <option value="active">Active</option>
+                        <option value="on_leave">On Leave</option>
+                        <option value="terminated">Terminated</option>
+                        <option value="resigned">Resigned</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Salary (INR)</label>
+                      <input name="salary" value={formData.salary} onChange={handleChange} className="w-full px-3 py-2 border rounded" />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Employee Code</label>
+                      <input name="employee_code" value={formData.employee_code} onChange={handleChange} className="w-full px-3 py-2 border rounded" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'statutory' && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Statutory Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">PF Number</label>
+                      <input value={statutory.pf_master.pf_number} onChange={(e) => handleStatutoryChange('pf_master', 'pf_number', e.target.value)} className="w-full px-3 py-2 border rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">PF UAN</label>
+                      <input value={statutory.pf_master.pf_uan} onChange={(e) => handleStatutoryChange('pf_master', 'pf_uan', e.target.value)} className="w-full px-3 py-2 border rounded" />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">PT State</label>
+                      <input value={statutory.pt.state} onChange={(e) => handleStatutoryChange('pt', 'state', e.target.value)} className="w-full px-3 py-2 border rounded" />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">PAN</label>
+                      <input value={statutory.tds.pan} onChange={(e) => handleStatutoryChange('tds', 'pan', e.target.value)} className="w-full px-3 py-2 border rounded" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'education' && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium text-gray-900">Education</h3>
+                    <button type="button" onClick={addEducation} className="bg-blue-600 text-white px-3 py-1 rounded text-sm flex items-center hover:bg-blue-700"><Plus size={16} className="mr-1"/>Add Education</button>
+                  </div>
+
+                  {education.map((edu, idx) => (
+                    <div key={idx} className="border p-4 rounded relative">
+                      <button type="button" onClick={() => removeEducation(idx)} className="absolute top-2 right-2 text-red-600"><Trash size={16} /></button>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input placeholder="Degree" value={edu.degree} onChange={(e) => updateEducation(idx, 'degree', e.target.value)} className="px-3 py-2 border rounded" />
+                        <input placeholder="Institution" value={edu.institution} onChange={(e) => updateEducation(idx, 'institution', e.target.value)} className="px-3 py-2 border rounded" />
+                        <input type="number" placeholder="Start Year" value={edu.start_year} onChange={(e) => updateEducation(idx, 'start_year', e.target.value)} className="px-3 py-2 border rounded" />
+                        <input type="number" placeholder="End Year" value={edu.end_year} onChange={(e) => updateEducation(idx, 'end_year', e.target.value)} className="px-3 py-2 border rounded" />
+                      </div>
+                      <textarea placeholder="Description" rows={2} value={edu.description} onChange={(e) => updateEducation(idx, 'description', e.target.value)} className="w-full mt-3 px-3 py-2 border rounded" />
+                    </div>
+                  ))}
+
+                  {education.length === 0 && <p className="text-gray-500 text-center py-4">No education records added yet.</p>}
+                </div>
+              )}
+
+              {activeTab === 'experience' && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium text-gray-900">Work Experience</h3>
+                    <button type="button" onClick={addExperience} className="bg-blue-600 text-white px-3 py-1 rounded text-sm flex items-center hover:bg-blue-700"><Plus size={16} className="mr-1"/>Add Experience</button>
+                  </div>
+
+                  {experience.map((exp, idx) => (
+                    <div key={idx} className="border p-4 rounded relative">
+                      <button type="button" onClick={() => removeExperience(idx)} className="absolute top-2 right-2 text-red-600"><Trash size={16} /></button>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input placeholder="Company" value={exp.company} onChange={(e) => updateExperience(idx, 'company', e.target.value)} className="px-3 py-2 border rounded" />
+                        <input placeholder="Position" value={exp.position} onChange={(e) => updateExperience(idx, 'position', e.target.value)} className="px-3 py-2 border rounded" />
+                        <input type="date" value={exp.start_date} onChange={(e) => updateExperience(idx, 'start_date', e.target.value)} className="px-3 py-2 border rounded" />
+                        <input type="date" value={exp.end_date} onChange={(e) => updateExperience(idx, 'end_date', e.target.value)} className="px-3 py-2 border rounded" />
+                      </div>
+                      <textarea placeholder="Description" rows={2} value={exp.description} onChange={(e) => updateExperience(idx, 'description', e.target.value)} className="w-full mt-3 px-3 py-2 border rounded" />
+                    </div>
+                  ))}
+
+                  {experience.length === 0 && <p className="text-gray-500 text-center py-4">No work experience added yet.</p>}
+                </div>
+              )}
+
+              {activeTab === 'documents' && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Documents & Bank Details</h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Profile Image</label>
+                      <input type="file" accept="image/*" onChange={handleProfileUpload} className="w-full" />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Upload Documents</label>
+                      <input type="file" multiple onChange={handleDocumentUpload} className="w-full" />
+                      <div className="mt-2 space-y-1">
+                        {documents.map((doc, i) => (
+                          <div key={i} className="flex items-center justify-between bg-gray-100 p-2 rounded">
+                            <div className="text-sm">{doc.name} <span className="text-xs text-gray-500">({Math.round(doc.size/1024)} KB)</span></div>
+                            <button type="button" onClick={() => removeDocument(i)} className="text-red-600">Remove</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input placeholder="Bank Name" value={bank.bank_name} onChange={(e) => handleBankChange('bank_name', e.target.value)} className="px-3 py-2 border rounded" />
+                    <input placeholder="Account Number" value={bank.account_number} onChange={(e) => handleBankChange('account_number', e.target.value)} className="px-3 py-2 border rounded" />
+                    <input placeholder="IFSC" value={bank.ifsc} onChange={(e) => handleBankChange('ifsc', e.target.value)} className="px-3 py-2 border rounded" />
+                    <input placeholder="Branch" value={bank.branch} onChange={(e) => handleBankChange('branch', e.target.value)} className="px-3 py-2 border rounded" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+              <Link href="/dashboard/employees" className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 flex items-center"><X size={16} className="mr-1"/>Cancel</Link>
+
+              <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center">
+                {saving ? (<><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>Saving...</>) : (<><Save size={16} className="mr-1"/>Save Employee</>)}
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );

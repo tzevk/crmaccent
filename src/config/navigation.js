@@ -39,6 +39,8 @@ export const navigationItems = [
       { title: 'All Leads', href: '/dashboard/leads' },
       { title: 'Add Lead', href: '/dashboard/leads/add' },
       { title: 'Import Leads', href: '/dashboard/leads/import' },
+      { title: 'Pipeline View', href: '/dashboard/leads/pipeline' },
+      { title: 'Lead Sources', href: '/dashboard/leads/sources' },
       { title: 'Outreach', href: '/dashboard/outreach' }
     ]
   },
@@ -62,6 +64,18 @@ export const navigationItems = [
       { title: 'Add Employee', href: '/dashboard/employees/add' },
       { title: 'Departments', href: '/dashboard/employees/departments' },
       { title: 'Designations', href: '/dashboard/employees/designations' }
+    ]
+  },
+  {
+    id: 'alumni',
+    title: 'Alumni',
+    icon: '🎓',
+    submenus: [
+      { title: 'All Alumni', href: '/dashboard/alumni' },
+      { title: 'Add Alumni', href: '/dashboard/alumni/add' },
+      { title: 'Alumni Events', href: '/dashboard/alumni/events' },
+      { title: 'Alumni Network', href: '/dashboard/alumni/network' },
+      { title: 'Career Updates', href: '/dashboard/alumni/careers' }
     ]
   },
   {
@@ -106,6 +120,35 @@ export const getBreadcrumbItems = (currentPage, navigationItems) => {
   }
 
   const breadcrumbs = [{ title: 'Dashboard', href: '/dashboard' }];
+  
+  // Handle dynamic routes like leads/[id] and leads/[id]/edit
+  if (currentPage.startsWith('leads/')) {
+    breadcrumbs.push({ title: 'Leads', href: '/dashboard/leads' });
+    
+    const pathParts = currentPage.split('/');
+    if (pathParts.length >= 2) {
+      const leadId = pathParts[1];
+      
+      if (pathParts.length === 2) {
+        // leads/[id] - View Lead
+        breadcrumbs.push({ 
+          title: `Lead #${leadId}`, 
+          href: `/dashboard/leads/${leadId}` 
+        });
+      } else if (pathParts[2] === 'edit') {
+        // leads/[id]/edit - Edit Lead
+        breadcrumbs.push({ 
+          title: `Lead #${leadId}`, 
+          href: `/dashboard/leads/${leadId}` 
+        });
+        breadcrumbs.push({ 
+          title: 'Edit', 
+          href: `/dashboard/leads/${leadId}/edit` 
+        });
+      }
+    }
+    return breadcrumbs;
+  }
   
   // Find the navigation item and submenu that matches the current page
   for (const navItem of navigationItems) {

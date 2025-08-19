@@ -129,22 +129,35 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };  const StatCard = ({ title, value, icon: Icon, color = "blue", onClick }) => (
-    <div 
-      className={`bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''}`}
-      onClick={onClick}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className={`text-3xl font-bold text-${color}-600`}>{value}</p>
-        </div>
-        <div className={`p-3 bg-${color}-100 rounded-lg`}>
-          <Icon className={`h-6 w-6 text-${color}-600`} />
+  };
+
+  // StatCard: use explicit Tailwind classes rather than dynamic class names
+  const colorClasses = {
+    blue: { value: 'text-blue-600', iconBg: 'bg-blue-100', iconText: 'text-blue-600' },
+    green: { value: 'text-green-600', iconBg: 'bg-green-100', iconText: 'text-green-600' },
+    purple: { value: 'text-purple-600', iconBg: 'bg-purple-100', iconText: 'text-purple-600' },
+    orange: { value: 'text-orange-600', iconBg: 'bg-orange-100', iconText: 'text-orange-600' }
+  };
+
+  const StatCard = ({ title, value, icon: Icon, color = 'blue', onClick }) => {
+    const cls = colorClasses[color] || colorClasses.blue;
+    return (
+      <div
+        className={`bg-white p-5 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''}`}
+        onClick={onClick}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-600">{title}</p>
+            <p className={`text-3xl font-bold ${cls.value}`}>{value}</p>
+          </div>
+          <div className={`${cls.iconBg} p-3 rounded-lg flex items-center justify-center`}>
+            <Icon className={`${cls.iconText} h-6 w-6`} />
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const formatCurrency = (amount) => {
     if (amount >= 10000000) {
@@ -239,10 +252,12 @@ export default function DashboardPage() {
         ))}
       </div>
     );
-  };  const ChartCard = ({ title, children, className = "" }) => (
+  };
+
+  const ChartCard = ({ title, children, className = '' }) => (
     <div className={`bg-white p-6 rounded-lg shadow-sm border border-gray-200 ${className}`}>
       <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
-      {children}
+      <div className="min-h-[160px]">{children}</div>
     </div>
   );
 
@@ -252,7 +267,7 @@ export default function DashboardPage() {
         <Navbar user={user} />
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading dashboard...</p>
           </div>
         </div>
@@ -269,7 +284,7 @@ export default function DashboardPage() {
             <p className="text-red-600 mb-4">{error}</p>
             <button 
               onClick={fetchDashboardData}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700"
             >
               Retry
             </button>
@@ -282,8 +297,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar user={user} />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 form-scrollable">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">ACCENT TECHNO SOLUTIONS</h1>
@@ -291,7 +305,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           <StatCard
             title="Total Leads"
             value={stats.leads.total}
@@ -323,7 +337,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <ChartCard title="Lead Status Distribution">
             <PieChart
               data={[
@@ -331,7 +345,7 @@ export default function DashboardPage() {
                 { label: 'In Progress', value: stats.leads.inProgress },
                 { label: 'Closed', value: stats.leads.closed }
               ]}
-              colors={['#3B82F6', '#F59E0B', '#10B981']}
+              colors={['#8B5CF6', '#F59E0B', '#10B981']}
             />
           </ChartCard>
           
@@ -347,17 +361,17 @@ export default function DashboardPage() {
         </div>
 
         {/* EPC Specific Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Engineering Disciplines</h3>
-              <Wrench className="h-5 w-5 text-blue-600" />
+              <Wrench className="h-5 w-5 text-purple-600" />
             </div>
             <div className="space-y-2">
               {stats.disciplines.length > 0 ? stats.disciplines.slice(0, 4).map((discipline, index) => (
                 <div key={index} className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">{discipline.discipline_name}</span>
-                  <span className="text-sm font-medium text-blue-600">Active</span>
+                  <span className="text-sm font-medium text-purple-600">Active</span>
                 </div>
               )) : (
                 <div className="text-sm text-gray-500">No disciplines configured</div>
@@ -389,10 +403,10 @@ export default function DashboardPage() {
               <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
               <Zap className="h-5 w-5 text-yellow-600" />
             </div>
-            <div className="space-y-3">
+              <div className="space-y-3">
               <button 
                 onClick={() => router.push('/dashboard/leads/add')}
-                className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm"
+                className="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors text-sm"
               >
                 Add New Lead
               </button>
@@ -404,7 +418,7 @@ export default function DashboardPage() {
               </button>
               <button 
                 onClick={() => router.push('/dashboard/projects/timelines')}
-                className="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors text-sm"
+                className="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors text-sm"
               >
                 📊 Timeline View
               </button>
@@ -417,13 +431,13 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>        {/* Recent Data Tables */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Leads */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Recent Leads</h3>
-                <Link href="/dashboard/leads" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                <Link href="/dashboard/leads" className="text-purple-600 hover:text-purple-700 text-sm font-medium">
                   View All <ArrowRight className="inline h-4 w-4 ml-1" />
                 </Link>
               </div>
@@ -437,7 +451,7 @@ export default function DashboardPage() {
                       <p className="text-sm text-gray-600">{lead.enquiry_details || lead.description || 'No details'}</p>
                     </div>
                     <span className={`px-2 py-1 text-xs rounded-full ${
-                      (lead.enquiry_status === 'New' || lead.status === 'new') ? 'bg-blue-100 text-blue-800' :
+                      (lead.enquiry_status === 'New' || lead.status === 'new') ? 'bg-purple-100 text-purple-800' :
                       (lead.enquiry_status === 'In Progress' || lead.status === 'in_progress') ? 'bg-yellow-100 text-yellow-800' :
                       'bg-green-100 text-green-800'
                     }`}>
@@ -456,7 +470,7 @@ export default function DashboardPage() {
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Recent Companies</h3>
-                <Link href="/dashboard/companies" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                <Link href="/dashboard/companies" className="text-purple-600 hover:text-purple-700 text-sm font-medium">
                   View All <ArrowRight className="inline h-4 w-4 ml-1" />
                 </Link>
               </div>
@@ -484,44 +498,41 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Bottom Action Cards */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div 
-            className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-lg shadow-lg text-white cursor-pointer hover:shadow-xl transition-shadow"
-            onClick={() => router.push('/dashboard/reports')}
-          >
+        {/* Bottom Action Cards - simplified for minimal design */}
+  <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/reports')}>
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold">Generate Reports</h3>
-                <p className="text-blue-100">Business analytics &amp; insights</p>
+                <h3 className="text-lg font-semibold text-gray-900">Generate Reports</h3>
+                <p className="text-sm text-gray-500">Business analytics &amp; insights</p>
               </div>
-              <BarChart3 className="h-8 w-8 text-blue-200" />
+              <div className="p-3 rounded-md bg-purple-50">
+                <BarChart3 className="h-6 w-6 text-purple-600" />
+              </div>
             </div>
           </div>
 
-          <div 
-            className="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-lg shadow-lg text-white cursor-pointer hover:shadow-xl transition-shadow"
-            onClick={() => router.push('/dashboard/masters')}
-          >
+          <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/masters')}>
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold">Master Data</h3>
-                <p className="text-green-100">Manage system settings</p>
+                <h3 className="text-lg font-semibold text-gray-900">Master Data</h3>
+                <p className="text-sm text-gray-500">Manage system settings</p>
               </div>
-              <Layers className="h-8 w-8 text-green-200" />
+              <div className="p-3 rounded-md bg-purple-50">
+                <Layers className="h-6 w-6 text-purple-600" />
+              </div>
             </div>
           </div>
 
-          <div 
-            className="bg-gradient-to-r from-purple-500 to-purple-600 p-6 rounded-lg shadow-lg text-white cursor-pointer hover:shadow-xl transition-shadow"
-            onClick={() => router.push('/dashboard/calendar')}
-          >
+          <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-sm transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/calendar')}>
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold">Calendar &amp; Tasks</h3>
-                <p className="text-purple-100">Schedule &amp; deadlines</p>
+                <h3 className="text-lg font-semibold text-gray-900">Calendar &amp; Tasks</h3>
+                <p className="text-sm text-gray-500">Schedule &amp; deadlines</p>
               </div>
-              <Calendar className="h-8 w-8 text-purple-200" />
+              <div className="p-3 rounded-md bg-purple-50">
+                <Calendar className="h-6 w-6 text-purple-600" />
+              </div>
             </div>
           </div>
         </div>

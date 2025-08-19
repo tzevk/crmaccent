@@ -101,24 +101,22 @@ body {
 
 /* Enhanced navbar styling */
 .navbar-glass {
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.9) 0%, 
-    rgba(248, 250, 252, 0.95) 50%, 
-    rgba(255, 255, 255, 0.9) 100%);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(229, 231, 235, 0.3);
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.98));
+  /* reduced blur for minimal theme */
+  backdrop-filter: none;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.6);
 }
 
 /* Custom button hover effects */
 .btn-gradient {
   background: linear-gradient(135deg, #64126D 0%, #86288F 100%);
-  transition: all 0.3s ease;
+  transition: background-color 0.12s ease, transform 0.08s ease;
+  box-shadow: 0 1px 4px rgba(99, 27, 99, 0.06);
 }
 
 .btn-gradient:hover {
-  background: linear-gradient(135deg, #86288F 0%, #64126D 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(100, 18, 109, 0.3);
+  background: linear-gradient(135deg, #69146f 0%, #7c2a85 100%);
+  transform: translateY(0);
 }
 
 /* Enhanced dropdown styling */
@@ -134,23 +132,37 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
+/* Make the main document non-scrollable; forms/containers with .form-scrollable will handle internal scrolling */
+html, body, #__next {
+  height: 100%;
+  overflow: hidden;
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
+/* Utility: use on a container to make only it scroll while background stays fixed */
+.form-scrollable {
+  max-height: calc(100vh - 112px); /* extra breathing room for navbar + padding */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 18px; /* more space for scrollbar */
+  padding-bottom: 32px; /* safer bottom padding for content */
 }
 
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(45deg, #64126D, #86288F);
-  border-radius: 4px;
+/* Hide visible scrollbars for a minimal UI while keeping scrolling functional */
+/* Firefox */
+html, body, #__next, .form-scrollable, .dropdown-container .max-h-96 {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(45deg, #86288F, #64126D);
+/* Webkit browsers */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#__next::-webkit-scrollbar,
+.form-scrollable::-webkit-scrollbar,
+.dropdown-container .max-h-96::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Enhanced focus states */

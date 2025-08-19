@@ -292,7 +292,8 @@ export default function LeadEditPage() {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="form-scrollable">
+          <form onSubmit={handleSubmit} className="space-y-6">
           {Object.entries(formFields).map(([sectionKey, section]) => {
             const IconComponent = section.icon;
             return (
@@ -340,7 +341,8 @@ export default function LeadEditPage() {
               </button>
             </div>
           </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
