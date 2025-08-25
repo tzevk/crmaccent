@@ -12,10 +12,16 @@
     "setup": "./scripts/setup-dev.sh",
     "db:setup": "curl -X GET http://localhost:3000/api/setup-db",
     "db:test": "node scripts/test-db-connection.js",
-    "db:health": "curl -X GET http://localhost:3000/api/health/database"
+    "db:health": "curl -X GET http://localhost:3000/api/health/database",
+    "leads:setup": "node scripts/setup-leads-database.js",
+    "leads:test": "node scripts/test-database.js",
+    "companies:template": "node create-companies-template.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "autoprefixer": "^10.4.21",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
     "dotenv": "^16.6.1",
     "form-data": "^4.0.4",
     "formidable": "^3.5.4",
@@ -29,9 +35,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
     "eslint": "^9",
-    "eslint-config-next": "15.3.5",
-    "tailwindcss": "^4"
+    "eslint-config-next": "15.3.5"
   }
 }

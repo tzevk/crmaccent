@@ -1,4 +1,3 @@
-// lib/db.js
 import mysql from 'mysql2/promise';
 
 const dbConfig = {
@@ -7,55 +6,45 @@ const dbConfig = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
-  connectTimeout: 30000,
-  connectionLimit: 5,        // Respect limits on shared hosting
-  queueLimit: 0,             // No queue limit
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  connectTimeout: 10000,
+  multipleStatements: true
 };
 
-// Create a global connection pool
-const pool = mysql.createPool(dbConfig);
+let pool = null;
 
-// Main function to run queries
-export async function executeQuery(query, params = []) {
-  let connection;
+export function getDb() {
+  if (!pool) {
+    pool = mysql.createPool(dbConfig);
+  }
+  return pool;
+}
+
+export async function testConnection() {
   try {
-    connection = await pool.getConnection();
-    const [results] = await connection.execute(query, params);
+    const db = getDb();
+    const connection = await db.getConnection();
+    await connection.ping();
+    connection.release();
+    console.log('Database connected successfully');
+    return true;
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    return false;
+  }
+}
+
+export async function query(sql, params = []) {
+  try {
+    const db = getDb();
+    const [results] = await db.execute(sql, params);
     return results;
   } catch (error) {
-    console.error('❌ Database query error:', error);
-    console.error('Connection config (safe):', {
-      host: dbConfig.host,
-      port: dbConfig.port,
-      database: dbConfig.database,
-      user: dbConfig.user,
-      ssl: !!dbConfig.ssl
-    });
-    throw error;
-  } finally {
-    if (connection) connection.release();
-  }
-}
-
-// For transactions or manual control
-export async function getDbConnection() {
-  try {
-    return await mysql.createConnection(dbConfig);
-  } catch (error) {
-    console.error('❌ Error creating manual DB connection:', error);
+    console.error('Database query error:', error);
     throw error;
   }
 }
 
-// Graceful shutdown
-export async function closePool() {
-  try {
-    await pool.end();
-    console.log('✅ DB pool closed successfully');
-  } catch (error) {
-    console.error('❌ Error closing DB pool:', error);
-  }
-}
+export default getDb;
