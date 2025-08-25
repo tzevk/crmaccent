@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navigation from "@/components/navigation/Navigation";
 import "../add/lead-form-page.css";
 
-export default function EditLeadPage() {
+function EditLeadContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const leadId = searchParams.get('id');
@@ -782,5 +782,31 @@ export default function EditLeadPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Loading component for Suspense fallback
+function EditLeadLoading() {
+  return (
+    <div className="page-container">
+      <Navigation />
+      <div className="main-content">
+        <div className="loading-container">
+          <div className="loading-content">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main export with Suspense wrapper
+export default function EditLeadPage() {
+  return (
+    <Suspense fallback={<EditLeadLoading />}>
+      <EditLeadContent />
+    </Suspense>
   );
 }
