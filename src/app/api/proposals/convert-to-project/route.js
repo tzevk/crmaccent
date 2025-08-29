@@ -13,7 +13,7 @@ export async function POST(request) {
   let connection;
   
   try {
-    const { proposalId, projectData = {} } = await request.json();
+    const { proposalId } = await request.json();
     connection = await mysql.createConnection(dbConfig);
 
     await connection.beginTransaction();
@@ -31,59 +31,47 @@ export async function POST(request) {
 
       const proposal = proposalRows[0];
 
-      // Check if already converted
-      if (proposal.is_converted_to_project) {
-        throw new Error('Proposal already converted to project');
-      }
-
       // Check if status allows conversion
-      if (proposal.current_status !== 'Awarded') {
-        throw new Error('Only awarded proposals can be converted to projects');
+      if (!['Awarded', 'Submitted'].includes(proposal.current_status)) {
+        throw new Error('Only awarded or submitted proposals can be converted to projects');
       }
 
-      // Generate unique project ID
-      const timestamp = Date.now();
-      const projectId = `PROJ-${timestamp}`;
+      // Generate project number
+      const currentYear = new Date().getFullYear();
+      const [countRows] = await connection.execute(
+        'SELECT COUNT(*) as count FROM projects WHERE project_number LIKE ?',
+        [`PRJ_%_${currentYear}`]
+      );
+      const projectCount = countRows[0].count + 1;
+      const projectNumber = `PRJ_${String(projectCount).padStart(3, '0')}_${currentYear}`;
 
       // Create project from proposal data
       const [projectResult] = await connection.execute(`
         INSERT INTO projects (
-          project_id,
+          project_number,
           project_name,
           client_name,
-          contact_person,
-          email,
-          phone_number,
-          address,
+          city,
+          received_date,
           project_type,
-          estimated_value,
+          project_cost,
           currency,
-          estimated_duration,
-          scope_of_work,
           status,
-          start_date,
-          expected_completion_date,
-          created_from_proposal_id,
+          proposal_id,
           created_at,
           updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
       `, [
-        projectId,
-        proposal.project_name || proposal.proposal_title,
+        projectNumber,
+        proposal.proposal_title,
         proposal.client_name,
-        proposal.contact_person,
-        proposal.email,
-        proposal.phone_number || null,
-        proposal.address || null,
-        proposal.project_type || 'General',
+        proposal.client_address || '',
+        proposal.proposal_date,
+        'Project',
         proposal.estimated_value,
         proposal.currency || 'INR',
-        proposal.estimated_duration || null,
-        proposal.scope_of_work || null,
-        'Active',
-        projectData.start_date || new Date().toISOString().split('T')[0],
-        projectData.expected_completion_date || null,
-        proposal.id
+        'Ongoing',
+        proposalId
       ]);
 
       const newProjectId = projectResult.insertId;
@@ -91,18 +79,17 @@ export async function POST(request) {
       // Update proposal to mark as converted
       await connection.execute(`
         UPDATE proposals 
-        SET is_converted_to_project = 1, 
-            project_id = ?,
+        SET current_status = 'Converted to Project',
             updated_at = NOW()
         WHERE id = ?
-      `, [projectId, proposalId]);
+      `, [proposalId]);
 
       await connection.commit();
 
       return NextResponse.json({
         success: true,
         message: 'Proposal successfully converted to project',
-        project_id: projectId,
+        project_id: projectNumber,
         project_database_id: newProjectId
       });
 

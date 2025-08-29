@@ -2,7 +2,7 @@
 
 .page-container {
   min-height: 100vh;
-  background: #f9fafb;
+  background: linear-gradient(135deg, #FFFFFF 0%, rgba(134, 40, 143, 0.05) 100%);
 }
 
 .main-content {
@@ -29,8 +29,8 @@
 .loading-spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid #f3f4f6;
-  border-top: 3px solid #667eea;
+  border: 3px solid rgba(134, 40, 143, 0.1);
+  border-top: 3px solid #64126D;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -41,7 +41,7 @@
 }
 
 .loading-text {
-  color: #6b7280;
+  color: #86288F;
   font-size: 1rem;
 }
 

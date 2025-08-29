@@ -12,6 +12,7 @@ export default function ProposalsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [convertingId, setConvertingId] = useState(null);
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState(null);
@@ -94,6 +95,34 @@ export default function ProposalsPage() {
     return new Date(dateString).toLocaleDateString('en-IN');
   };
 
+  const exportToCSV = () => {
+    const headers = ['Proposal ID', 'Title', 'Client', 'Status', 'Value', 'Currency', 'Submission Date', 'Expected Decision'];
+    const csvData = [
+      headers,
+      ...filteredProposals.map(proposal => [
+        proposal.proposal_id,
+        proposal.proposal_title,
+        proposal.client_name,
+        proposal.current_status,
+        proposal.estimated_value || '0',
+        proposal.currency || 'INR',
+        formatDate(proposal.proposal_date),
+        formatDate(proposal.expected_decision_date)
+      ])
+    ];
+    
+    const csvContent = csvData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `proposals_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Convert proposal to project (NEW FLOW: leads -> proposals -> projects)
   const convertProposalToProject = async (proposalId) => {
     setConvertingToLead(true); // Reusing the loading state
@@ -124,6 +153,35 @@ export default function ProposalsPage() {
       alert(`Error: ${error.message}`);
     } finally {
       setConvertingToLead(false);
+    }
+  };
+
+  // Delete proposal
+  const deleteProposal = async (proposalId, proposalTitle) => {
+    if (!confirm(`Are you sure you want to delete the proposal "${proposalTitle}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/proposals/${proposalId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        alert('Proposal deleted successfully!');
+        // Remove the proposal from the local state
+        setProposals(prev => prev.filter(p => p.id !== proposalId));
+      } else {
+        throw new Error(result.error || 'Failed to delete proposal');
+      }
+    } catch (error) {
+      console.error('Error deleting proposal:', error);
+      alert(`Error: ${error.message}`);
     }
   };
 
@@ -188,9 +246,15 @@ export default function ProposalsPage() {
     return colors[status] || '#6b7280';
   };
 
-  const filteredProposals = statusFilter === 'All' 
-    ? proposals 
-    : proposals.filter(p => p.current_status === statusFilter);
+  const filteredProposals = proposals.filter(proposal => {
+    const matchesStatus = statusFilter === 'All' || proposal.current_status === statusFilter;
+    const matchesSearch = searchQuery === '' || 
+      proposal.proposal_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      proposal.client_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      proposal.proposal_id?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesStatus && matchesSearch;
+  });
 
   if (!user) return null;
 
@@ -200,207 +264,268 @@ export default function ProposalsPage() {
       
       <main className="proposals-main">
         <div className="proposals-container">
-          {/* Header Section */}
-          <div className="proposals-header">
+          {/* Modern Header Section */}
+          <div className="modern-header">
             <div className="header-content">
-              <h1>Proposals Dashboard</h1>
-            </div>
-            <div className="header-actions">
-              <Link href="/proposals/new" className="btn-primary">
-                <span>+</span>
-                New Proposal
-              </Link>
-              <button className="btn-secondary">
-                Export
-              </button>
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="proposals-filters">
-            <select 
-              className="filter-select" 
-              value={statusFilter} 
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="All">All Status</option>
-              <option value="Draft">Draft</option>
-              <option value="Submitted">Submitted</option>
-              <option value="Under Discussion">Under Discussion</option>
-              <option value="Awaiting Response">Awaiting Response</option>
-              <option value="Awarded">Awarded</option>
-              <option value="Lost">Lost</option>
-              <option value="Closed">Closed</option>
-            </select>
-          </div>
-
-        {loading ? (
-          <div className="loading-state">
-            <p>Loading proposals...</p>
-          </div>
-        ) : error ? (
-          <div className="error-state">
-            <p>{error}</p>
-            <button onClick={fetchProposals} className="btn-secondary">Retry</button>
-          </div>
-        ) : (
-          <>
-            <div className="proposals-stats">
-              <div className="stat-card">
-                <div className="stat-icon" style={{backgroundColor: '#f0f9ff'}}>
-                  <svg width="24" height="24" fill="none" stroke="#3b82f6" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 71.707.293l5.414 5.414a1 1 0 71.293.707V19a2 2 0 71-2 2z" />
-                  </svg>
-                </div>
-                <div className="stat-content">
-                  <h3>Total Proposals</h3>
-                  <p className="stat-number">{stats.total}</p>
-                  <span className="stat-change neutral">Active proposals</span>
-                </div>
+              <div className="header-text">
+                <h1 className="page-title">Proposals Management</h1>
+                <p className="page-subtitle">Manage and track all your business proposals</p>
               </div>
-
-              <div className="stat-card">
-                <div className="stat-icon" style={{backgroundColor: '#fef3c7'}}>
-                  <svg width="24" height="24" fill="none" stroke="#f59e0b" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 1118 0z" />
+              <div className="header-actions">
+                <Link href="/proposals/new" className="action-btn primary">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
                   </svg>
-                </div>
-                <div className="stat-content">
-                  <h3>Pending</h3>
-                  <p className="stat-number">{stats.pending}</p>
-                  <span className="stat-change neutral">Under Review</span>
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon" style={{backgroundColor: '#d1fae5'}}>
-                  <svg width="24" height="24" fill="none" stroke="#10b981" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 701.946 1.946l1.999 3.46a11.952 11.952 0 90-8.91l-3.44-1.999a3.42 3.42 0 70-1.946z" />
+                  New Proposal
+                </Link>
+                <button className="action-btn secondary" onClick={exportToCSV}>
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                </div>
-                <div className="stat-content">
-                  <h3>Awarded</h3>
-                  <p className="stat-number">{stats.awarded}</p>
-                  <span className="stat-change positive">{formatCurrency(stats.totalValue)} Value</span>
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon" style={{backgroundColor: '#fee2e2'}}>
-                  <svg width="24" height="24" fill="none" stroke="#ef4444" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </div>
-                <div className="stat-content">
-                  <h3>Lost/Closed</h3>
-                  <p className="stat-number">{stats.lost}</p>
-                  <span className="stat-change negative">Analysis needed</span>
-                </div>
+                  Export CSV
+                </button>
               </div>
             </div>
+          </div>
 
-            <div className="proposals-table-container">
-              <div className="table-header">
-                <h2>Recent Proposals</h2>
-                <div className="table-actions">
-                  <input 
-                    type="text" 
-                    placeholder="Search proposals..." 
-                    className="search-input"
-                  />
-                  <button className="btn-secondary">Export</button>
+          {loading ? (
+            <div className="loading-container">
+              <div className="loading-content">
+                <div className="loading-spinner"></div>
+                <p className="loading-text">Loading proposals...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="error-container">
+              <div className="error-content">
+                <p className="error-text">{error}</p>
+                <button onClick={fetchProposals} className="action-btn secondary">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Retry
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Modern Stats Grid */}
+              <div className="stats-section">
+                <div className="stats-grid">
+                  <div className="stat-card primary">
+                    <div className="stat-icon">
+                      <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div className="stat-content">
+                      <div className="stat-value">{stats.total}</div>
+                      <div className="stat-label">Total Proposals</div>
+                      <div className="stat-change neutral">All proposals</div>
+                    </div>
+                  </div>
+
+                  <div className="stat-card warning">
+                    <div className="stat-icon">
+                      <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="stat-content">
+                      <div className="stat-value">{stats.pending}</div>
+                      <div className="stat-label">Pending Review</div>
+                      <div className="stat-change neutral">Awaiting response</div>
+                    </div>
+                  </div>
+
+                  <div className="stat-card success">
+                    <div className="stat-icon">
+                      <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 101.946 1.946l1.999 3.46a11.952 11.952 0 00-8.91l-3.44-1.999a3.42 3.42 0 00-1.946z" />
+                      </svg>
+                    </div>
+                    <div className="stat-content">
+                      <div className="stat-value">{stats.awarded}</div>
+                      <div className="stat-label">Awarded</div>
+                      <div className="stat-change positive">{formatCurrency(stats.totalValue)}</div>
+                    </div>
+                  </div>
+
+                  <div className="stat-card info">
+                    <div className="stat-icon">
+                      <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 00-2 2z" />
+                      </svg>
+                    </div>
+                    <div className="stat-content">
+                      <div className="stat-value">{((stats.awarded / (stats.total || 1)) * 100).toFixed(1)}%</div>
+                      <div className="stat-label">Success Rate</div>
+                      <div className="stat-change positive">Win ratio</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="proposals-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Proposal ID</th>
-                      <th>Title</th>
-                      <th>Client</th>
-                      <th>Value</th>
-                      <th>Status</th>
-                      <th>Submission Date</th>
-                      <th>Expected Decision</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {proposals.map((proposal) => (
-                      <tr key={proposal.id}>
-                        <td>
-                          <span className="proposal-id">{proposal.proposal_id}</span>
-                        </td>
-                        <td>
-                          <div className="proposal-title">
-                            <p>{proposal.proposal_title}</p>
-                            <span className="sector-tag">{proposal.project_type || 'General'}</span>
+              {/* Modern Filters */}
+              <div className="filters-section">
+                <div className="filter-card">
+                  <div className="filter-header">
+                    <h3>Filter Proposals</h3>
+                  </div>
+                  <div className="filter-controls">
+                    <select 
+                      className="modern-select" 
+                      value={statusFilter} 
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                      <option value="All">All Status</option>
+                      <option value="Draft">Draft</option>
+                      <option value="Submitted">Submitted</option>
+                      <option value="Under Discussion">Under Discussion</option>
+                      <option value="Awaiting Response">Awaiting Response</option>
+                      <option value="Awarded">Awarded</option>
+                      <option value="Lost">Lost</option>
+                      <option value="Closed">Closed</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modern Proposals Table */}
+              <div className="content-card proposals-list">
+                <div className="card-header">
+                  <h2 className="card-title">
+                    <div className="title-icon">
+                      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    Recent Proposals
+                  </h2>
+                  <div className="card-actions">
+                    <input 
+                      type="text" 
+                      placeholder="Search proposals..." 
+                      className="search-input"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <button className="view-all-btn" onClick={() => setSearchQuery('')}>
+                      Clear
+                    </button>
+                  </div>
+                </div>
+
+                <div className="card-content">
+                  {filteredProposals.length === 0 ? (
+                    <div className="empty-state">
+                      <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <p>No proposals found</p>
+                    </div>
+                  ) : (
+                    <div className="modern-table">
+                      <div className="table-header-row">
+                        <div className="table-cell">Proposal</div>
+                        <div className="table-cell">Client</div>
+                        <div className="table-cell">Value</div>
+                        <div className="table-cell">Status</div>
+                        <div className="table-cell">Date</div>
+                        <div className="table-cell">Actions</div>
+                      </div>
+                      
+                      {filteredProposals.slice(0, 10).map((proposal) => (
+                        <div key={proposal.id} className="table-row">
+                          <div className="table-cell proposal-info" data-label="Proposal">
+                            <div className="proposal-details">
+                              <div className="proposal-id">{proposal.proposal_id}</div>
+                              <div className="proposal-title">{proposal.proposal_title}</div>
+                              <div className="proposal-type">{proposal.project_type || 'General'}</div>
+                            </div>
                           </div>
-                        </td>
-                        <td>{proposal.client_name}</td>
-                        <td className="value-cell">{formatCurrency(proposal.estimated_value, proposal.currency)}</td>
-                        <td>
-                          <span 
-                            className="status-badge" 
-                            style={{backgroundColor: getStatusColor(proposal.current_status)}}
-                          >
-                            {proposal.current_status}
-                          </span>
-                        </td>
-                        <td>{formatDate(proposal.proposal_date)}</td>
-                        <td>{formatDate(proposal.expected_decision_date)}</td>
-                        <td>
-                          <div className="action-buttons">
-                            <button 
-                              className="btn-icon"
-                              title="View Details"
-                              onClick={() => router.push(`/proposals/${proposal.id}`)}
-                            >
-                              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 716 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                            <button 
-                              className="btn-icon"
-                              title="Edit"
-                              onClick={() => router.push(`/proposals/edit/${proposal.id}`)}
-                            >
-                              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                            {proposal.current_status !== 'Draft' && (
+                          
+                          <div className="table-cell" data-label="Client">
+                            <div className="client-info">
+                              <div className="client-name">{proposal.client_name}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="table-cell" data-label="Value">
+                            <div className="value-info">
+                              <div className="proposal-value">{formatCurrency(proposal.estimated_value, proposal.currency)}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="table-cell" data-label="Status">
+                            <span className={`modern-status-badge status-${proposal.current_status?.toLowerCase().replace(/ /g, '-')}`}>
+                              {proposal.current_status}
+                            </span>
+                          </div>
+                          
+                          <div className="table-cell" data-label="Date">
+                            <div className="date-info">
+                              <div className="submission-date">{formatDate(proposal.proposal_date)}</div>
+                              <div className="decision-date">Due: {formatDate(proposal.expected_decision_date)}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="table-cell" data-label="Actions">
+                            <div className="action-buttons">
                               <button 
-                                className="btn-convert"
-                                title="Convert to Project"
-                                onClick={() => convertProposalToProject(proposal.id)}
-                                disabled={convertingToLead}
+                                className="action-btn-small primary"
+                                title="View Details"
+                                onClick={() => router.push(`/proposals/${proposal.id}`)}
                               >
                                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
-                                {convertingToLead ? 'Converting...' : 'To Project'}
                               </button>
-                            )}
+                              
+                              <button 
+                                className="action-btn-small secondary"
+                                title="Edit Proposal"
+                                onClick={() => router.push(`/proposals/edit/${proposal.id}`)}
+                              >
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                              
+                              <button 
+                                className="action-btn-small danger"
+                                title="Delete Proposal"
+                                onClick={() => deleteProposal(proposal.id, proposal.proposal_title)}
+                              >
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                              
+                              {(proposal.current_status === 'Awarded' || proposal.current_status === 'Submitted') && (
+                                <button 
+                                  className="action-btn-small success"
+                                  title="Convert to Project"
+                                  onClick={() => convertProposalToProject(proposal.id)}
+                                  disabled={convertingToLead}
+                                >
+                                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                
-                {proposals.length === 0 && (
-                  <div className="empty-state">
-                    <>No proposals found. Create your first proposal to get started.</>
-                  </div>
-                )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </>
-        )}
-        </div> {/* Close proposals-container */}
+            </>
+          )}
+        </div>
       </main>
 
       {/* Conversion Modal */}
