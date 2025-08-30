@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Navigation from '@/components/navigation/Navigation';
+import NavigationMinimal from '@/components/navigation/Navigation';
 import LeadToProposalConverter from '@/components/leads/LeadToProposalConverter';
 import './leads.css';
 
@@ -228,7 +228,7 @@ export default function LeadsPage() {
 
   return (
     <div className="leads-page">
-      <Navigation user={user} />
+      <NavigationMinimal user={user} />
       
       <main className="leads-main">
         <div className="leads-container">

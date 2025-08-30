@@ -201,23 +201,6 @@ export default function EmployeeForm({ employee, onSubmit, onCancel }) {
 
   return (
     <div className="employee-form-container">
-      {/* Floating Save Button */}
-      <div className="floating-save-buttons">
-        <button
-          type="submit"
-          onClick={handleSubmit}
-          className="btn btn-primary"
-        >
-          💾 {employee ? "Update" : "Save"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="btn btn-secondary"
-        >
-          ❌ Cancel
-        </button>
-      </div>
 
       <form onSubmit={handleSubmit} className="employee-form">
         {/* Tab Navigation */}

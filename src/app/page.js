@@ -7,13 +7,8 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      router.push('/dashboard');
-    } else {
-      router.push('/login');
-    }
+    // Always redirect to login page on app start
+    router.push('/login');
   }, [router]);
 
   return (

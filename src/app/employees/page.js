@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Navigation from "@/components/navigation/Navigation";
+import NavigationMinimal from "@/components/navigation/Navigation";
 import EmployeeForm from "@/components/employees/EmployeeForm";
 import EmployeeList from "@/components/employees/EmployeeList";
 import "./employees.css";
@@ -290,7 +290,7 @@ export default function EmployeesPage() {
   if (loading && employees.length === 0) {
     return (
       <div className="page-container">
-        <Navigation user={user} />
+        <NavigationMinimal user={user} />
         <div className="loading-container">
           <div className="loading-content">
             <div className="loading-spinner"></div>
@@ -303,7 +303,7 @@ export default function EmployeesPage() {
 
   return (
     <div className="page-container">
-      <Navigation user={user} />
+      <NavigationMinimal user={user} />
       
       <main className="main-content">
         {/* Header Section */}

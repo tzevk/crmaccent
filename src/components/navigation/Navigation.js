@@ -1,235 +1,227 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import './Navigation-improved.css';
+import { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import './NavigationMinimal.css';
 
-export default function Navigation({ user }) {
-  const [activeDropdown, setActiveDropdown] = useState(null);
+export default function NavigationMinimal({ user }) {
+  const [activeModule, setActiveModule] = useState(null);
+  const [breadcrumb, setBreadcrumb] = useState([]);
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('user');
+    }
     router.push('/login');
   };
 
-  const toggleDropdown = (moduleName) => {
-    setActiveDropdown(activeDropdown === moduleName ? null : moduleName);
+  const handleNavigation = (href) => {
+    router.push(href);
+    setActiveModule(null);
   };
 
-  const handleNavigation = (href, isLogout = false) => {
-    if (isLogout) {
-      handleLogout();
-    } else {
-      router.push(href);
+  const toggleModule = (moduleName) => {
+    setActiveModule((curr) => (curr === moduleName ? null : moduleName));
+  };
+
+  // Update breadcrumb based on current path
+  useEffect(() => {
+    if (!pathname) return;
+    const pathSegments = pathname.split('/').filter(Boolean);
+    const crumbItems = [];
+
+    if (pathSegments.length > 0) {
+      crumbItems.push({ name: 'Home', href: '/dashboard' });
+
+      pathSegments.forEach((segment, index) => {
+        const name = segment.charAt(0).toUpperCase() + segment.slice(1);
+        const href = '/' + pathSegments.slice(0, index + 1).join('/');
+        crumbItems.push({ name, href });
+      });
     }
-    setActiveDropdown(null);
-  };
 
-  const navigationItems = [
+    setBreadcrumb(crumbItems);
+  }, [pathname]);
+
+  const navigationModules = [
     {
       name: 'Dashboard',
       icon: (
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5v14M16 5v14" />
         </svg>
       ),
-      submenu: [
-        { name: 'Main Dashboard', href: '/dashboard' },
+      color: 'var(--primary)',
+      items: [
+        { name: 'Overview', href: '/dashboard' },
         { name: 'Analytics', href: '/dashboard/analytics' },
         { name: 'Reports', href: '/dashboard/reports' },
-        { name: 'Performance', href: '/dashboard/performance' }
-      ]
-    },
-    {
-      name: 'Proposals',
-      icon: (
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      ),
-      submenu: [
-        { name: 'All Proposals', href: '/proposals' },
-        { name: 'Create Proposal', href: '/proposals/new' },
-        { name: 'Proposal Pipeline', href: '/proposals/pipeline' },
-        { name: 'Submitted Proposals', href: '/proposals/submitted' },
-        { name: 'Proposal Reports', href: '/proposals/reports' }
-      ]
+      ],
     },
     {
       name: 'Leads',
       icon: (
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
       ),
-      submenu: [
+      color: '#3B82F6',
+      badge: '12',
+      items: [
         { name: 'All Leads', href: '/leads' },
-        { name: 'Add New Lead', href: '/leads/new' },
-        { name: 'Lead Pipeline', href: '/leads/pipeline' },
-        { name: 'Lead Sources', href: '/leads/sources' },
-        { name: 'Lead Reports', href: '/leads/reports' }
-      ]
+        { name: 'Add Lead', href: '/leads/new' },
+        { name: 'Pipeline', href: '/leads/pipeline' },
+        { name: 'Convert', href: '/leads/convert' },
+      ],
     },
     {
-      name: 'Employees',
+      name: 'Proposals',
       icon: (
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       ),
-      submenu: [
-        { name: 'All Employees', href: '/employees' },
-        { name: 'Add Employee', href: '/employees' },
-        { name: 'Employee Reports', href: '/employees/reports' },
-        { name: 'Payroll', href: '/employees/payroll' },
-        { name: 'Attendance', href: '/employees/attendance' }
-      ]
+      color: '#10B981',
+      badge: '5',
+      items: [
+        { name: 'All Proposals', href: '/proposals' },
+        { name: 'Create New', href: '/proposals/new' },
+        { name: 'Templates', href: '/proposals/templates' },
+        { name: 'Won/Lost', href: '/proposals/archive' },
+      ],
     },
     {
       name: 'Projects',
       icon: (
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 712 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 712-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 712-2m0 0V5a2 2 0 712-2h6a2 2 0 712 2v2M7 7h10" />
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
         </svg>
       ),
-      submenu: [
-        { name: 'All Projects', href: '/projects' },
+      color: '#8B5CF6',
+      items: [
+        { name: 'Active Projects', href: '/projects' },
         { name: 'Create Project', href: '/projects/new' },
-        { name: 'Project Timeline', href: '/projects/timeline' },
-        { name: 'Project Resources', href: '/projects/resources' },
-        { name: 'Project Reports', href: '/projects/reports' }
-      ]
+        { name: 'Timeline', href: '/projects/timeline' },
+        { name: 'Resources', href: '/projects/resources' },
+      ],
     },
     {
       name: 'Master',
       icon: (
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
         </svg>
       ),
-      submenu: [
+      color: '#F59E0B',
+      items: [
         { name: 'Lead Master', href: '/master/leads' },
         { name: 'Project Master', href: '/master/projects' },
         { name: 'Proposal Master', href: '/master/proposals' },
-        { name: 'Client Master', href: '/master/clients' },
-        { name: 'Company Management', href: '/companies' },
+        { name: 'Company Master', href: '/companies' },
         { name: 'Employee Master', href: '/master/employees' },
         { name: 'User Master', href: '/master/users' },
         { name: 'Categories', href: '/master/categories' },
-        { name: 'Locations', href: '/master/locations' }
-      ]
+        { name: 'Settings', href: '/master/settings' },
+        { name: 'System Config', href: '/master/config' },
+      ],
     },
     {
-      name: 'Calendar',
+      name: 'Employees',
       icon: (
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
       ),
-      submenu: [
-        { name: 'Calendar View', href: '/calendar' },
-        { name: 'Schedule Meeting', href: '/calendar/new' },
-        { name: 'My Events', href: '/calendar/events' },
-        { name: 'Team Schedule', href: '/calendar/team' },
-        { name: 'Event Types', href: '/calendar/types' }
-      ]
+      color: '#EF4444',
+      items: [
+        { name: 'All Employees', href: '/employees' },
+        { name: 'Departments', href: '/employees/departments' },
+      ],
     },
-    {
-      name: 'Reports',
-      icon: (
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 712-2h2a2 2 0 712 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 712-2h2a2 2 0 712 2v4a2 2 0 71-2 2h-2a2 2 0 00-2 2z" />
-        </svg>
-      ),
-      submenu: [
-        { name: 'All Reports', href: '/reports' },
-        { name: 'Sales Reports', href: '/reports/sales' },
-        { name: 'Project Reports', href: '/reports/projects' },
-        { name: 'Financial Reports', href: '/reports/financial' },
-        { name: 'Custom Reports', href: '/reports/custom' }
-      ]
-    },
-    {
-      name: 'User',
-      icon: (
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 515 0z" />
-        </svg>
-      ),
-      submenu: [
-        { name: 'All Users', href: '/users' },
-        { name: 'Add User', href: '/users/new' },
-        { name: 'User Roles', href: '/users/roles' },
-        { name: 'Permissions', href: '/users/permissions' },
-        { name: 'User Activity', href: '/users/activity' }
-      ]
-    },
-    {
-      name: 'Settings',
-      icon: (
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 616 0z" />
-        </svg>
-      ),
-      submenu: [
-        { name: 'General Settings', href: '/settings' },
-        { name: 'System Config', href: '/settings/system' },
-        { name: 'Email Templates', href: '/settings/email' },
-        { name: 'Notifications', href: '/settings/notifications' },
-        { name: 'Backup & Restore', href: '/settings/backup' },
-        { name: 'Logout', href: '/logout', isLogout: true }
-      ]
-    }
   ];
 
   return (
-    <nav className="navigation">
+    <nav className="nav-minimal">
       <div className="nav-container">
-        {/* Desktop Navigation - With Dropdowns */}
-        <div className="nav-menu">
-          {navigationItems.map((item) => (
-            <div key={item.name} className="nav-item-wrapper">
+        {/* Brand */}
+        <div className="nav-brand">
+          <div className="brand-icon">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <span className="brand-text">CRM Accent</span>
+        </div>
+
+        {/* Breadcrumb Navigation */}
+        <div className="breadcrumb-container">
+          {breadcrumb.map((crumb, index) => (
+            <div key={index} className="breadcrumb-item">
+              {index > 0 && <span className="breadcrumb-separator">/</span>}
               <button
-                className={`nav-item ${activeDropdown === item.name ? 'active' : ''}`}
-                onClick={() => toggleDropdown(item.name)}
+                className={`breadcrumb-link ${index === breadcrumb.length - 1 ? 'active' : ''}`}
+                onClick={() => handleNavigation(crumb.href)}
               >
-                {item.icon}
-                <span>{item.name}</span>
-                <svg 
-                  className={`dropdown-arrow ${activeDropdown === item.name ? 'rotated' : ''}`}
-                  width="14" 
-                  height="14" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
+                {crumb.name}
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Module Navigation */}
+        <div className="nav-modules">
+          {navigationModules.map((module) => (
+            <div key={module.name} className="nav-module">
+              <button
+                className={`module-btn ${activeModule === module.name ? 'active' : ''}`}
+                onClick={() => toggleModule(module.name)}
+                style={{ '--module-color': module.color }}
+              >
+                <span className="module-icon">{module.icon}</span>
+                <span className="module-name">{module.name}</span>
+                {module.badge && <span className="module-badge">{module.badge}</span>}
+                <svg className="module-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              
-              {activeDropdown === item.name && (
-                <div className="dropdown-menu">
-                  {item.submenu.map((subItem) => (
+
+              {activeModule === module.name && (
+                <div className="module-dropdown">
+                  {module.items.map((item) => (
                     <button
-                      key={subItem.name}
-                      className={`dropdown-item ${subItem.isLogout ? 'logout-item' : ''}`}
-                      onClick={() => handleNavigation(subItem.href, subItem.isLogout)}
+                      key={item.name}
+                      className="dropdown-item"
+                      onClick={() => handleNavigation(item.href)}
                     >
-                      {subItem.isLogout && (
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{marginRight: '0.5rem'}}>
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 613-3h4a3 3 0 613 3v1" />
-                        </svg>
-                      )}
-                      {subItem.name}
+                      {item.name}
                     </button>
                   ))}
                 </div>
               )}
             </div>
           ))}
+        </div>
+
+        {/* User Section */}
+        <div className="nav-user">
+          <div className="user-info">
+            <div className="user-avatar">
+              {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
+            </div>
+            <div className="user-details">
+              <span className="user-name">{user?.name || user?.username || 'User'}</span>
+              <span className="user-role">Admin</span>
+            </div>
+          </div>
+
+          <button className="logout-btn" onClick={handleLogout} title="Logout">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
         </div>
       </div>
     </nav>

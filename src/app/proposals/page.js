@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Navigation from '@/components/navigation/Navigation';
+import NavigationMinimal from '@/components/navigation/Navigation';
 import './proposals.css';
 
 export default function ProposalsPage() {
@@ -260,7 +260,7 @@ export default function ProposalsPage() {
 
   return (
     <div className="proposals-page">
-      <Navigation user={user} />
+      <NavigationMinimal user={user} />
       
       <main className="proposals-main">
         <div className="proposals-container">

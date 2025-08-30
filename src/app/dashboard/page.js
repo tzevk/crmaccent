@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Navigation from '../../components/navigation/Navigation';
+import NavigationMinimal from '../../components/navigation/Navigation';
 import './dashboard-modern.css';
 
 export default function DashboardPage() {
@@ -197,7 +197,7 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-layout">
-      <Navigation user={user} />
+      <NavigationMinimal user={user} />
       
       <div className="dashboard-container">
         {/* Header Section */}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navigation from '../../../components/navigation/Navigation';
-import './reports.css';
+import './reports-refined.css';
 
 export default function ReportsPage() {
   const [user, setUser] = useState(null);

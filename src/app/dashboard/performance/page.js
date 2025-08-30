@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navigation from '../../../components/navigation/Navigation';
-import './performance.css';
+import './performance-refined.css';
 
 export default function PerformancePage() {
   const [user, setUser] = useState(null);
