@@ -94,17 +94,13 @@ export default function EmployeesPage() {
   };
 
   const handlePreview = async () => {
-    console.log('Preview button clicked!');
     if (!selectedFile) {
       setError('Please select a file first');
       return;
     }
 
-    console.log('Selected file:', selectedFile.name);
-
     try {
       // Import XLSX dynamically
-      console.log('Importing XLSX...');
       const XLSX = await import('xlsx');
       
       // Read the Excel file
@@ -525,10 +521,7 @@ export default function EmployeesPage() {
                     <div className="preview-actions" style={{ marginTop: '20px', padding: '10px', border: '1px solid red' }}>
                       <button
                         type="button"
-                        onClick={() => {
-                          console.log('Button clicked!');
-                          handlePreview();
-                        }}
+                        onClick={handlePreview}
                         className="btn btn-outline"
                         style={{ 
                           background: '#667eea', 

@@ -39,6 +39,28 @@ export default function ProposalsPage() {
     fetchProposals();
   }, [router]);
 
+  const calculateStats = (proposalsData) => {
+    const totalProposals = proposalsData.length;
+    const pendingCount = proposalsData.filter(p => 
+      ['Submitted', 'Under Discussion', 'Awaiting Response'].includes(p.current_status)
+    ).length;
+    const awardedCount = proposalsData.filter(p => p.current_status === 'Awarded').length;
+    const lostCount = proposalsData.filter(p => 
+      ['Lost', 'Closed'].includes(p.current_status)
+    ).length;
+    const totalValue = proposalsData
+      .filter(p => p.estimated_value)
+      .reduce((sum, p) => sum + parseFloat(p.estimated_value || 0), 0);
+    
+    setStats({
+      total: totalProposals,
+      pending: pendingCount,
+      awarded: awardedCount,
+      lost: lostCount,
+      totalValue: totalValue
+    });
+  };
+
   const fetchProposals = async () => {
     try {
       setLoading(true);
@@ -51,27 +73,7 @@ export default function ProposalsPage() {
       const proposalsData = await response.json();
       
       setProposals(proposalsData);
-      
-      // Calculate stats
-      const totalProposals = proposalsData.length;
-      const pendingCount = proposalsData.filter(p => 
-        ['Submitted', 'Under Discussion', 'Awaiting Response'].includes(p.current_status)
-      ).length;
-      const awardedCount = proposalsData.filter(p => p.current_status === 'Awarded').length;
-      const lostCount = proposalsData.filter(p => 
-        ['Lost', 'Closed'].includes(p.current_status)
-      ).length;
-      const totalValue = proposalsData
-        .filter(p => p.estimated_value)
-        .reduce((sum, p) => sum + parseFloat(p.estimated_value || 0), 0);
-      
-      setStats({
-        total: totalProposals,
-        pending: pendingCount,
-        awarded: awardedCount,
-        lost: lostCount,
-        totalValue: totalValue
-      });
+      calculateStats(proposalsData);
       
     } catch (error) {
       console.error('Error fetching proposals:', error);
@@ -174,8 +176,12 @@ export default function ProposalsPage() {
       
       if (response.ok && result.success) {
         alert('Proposal deleted successfully!');
-        // Remove the proposal from the local state
-        setProposals(prev => prev.filter(p => p.id !== proposalId));
+        // Remove the proposal from the local state and recalculate stats
+        setProposals(prev => {
+          const updated = prev.filter(p => p.id !== proposalId);
+          calculateStats(updated);
+          return updated;
+        });
       } else {
         throw new Error(result.error || 'Failed to delete proposal');
       }
@@ -272,6 +278,12 @@ export default function ProposalsPage() {
                 <p className="page-subtitle">Manage and track all your business proposals</p>
               </div>
               <div className="header-actions">
+                <Link href="/proposals/template" className="action-btn secondary">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Templates
+                </Link>
                 <Link href="/proposals/new" className="action-btn primary">
                   <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />

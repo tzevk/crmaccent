@@ -114,7 +114,10 @@ export async function DELETE(request, { params }) {
       [id]
     );
     
-    return NextResponse.json({ message: 'Proposal deleted successfully' });
+    return NextResponse.json({ 
+      success: true,
+      message: 'Proposal deleted successfully' 
+    });
   } catch (error) {
     console.error('Database error:', error);
     return NextResponse.json(

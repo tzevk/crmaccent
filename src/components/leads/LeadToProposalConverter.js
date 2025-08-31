@@ -221,7 +221,7 @@ export default function LeadToProposalConverter({ lead, onConversionSuccess, onC
                 value={formData.budget_range}
                 onChange={handleInputChange}
                 className="form-input"
-                placeholder="e.g., $10,000 - $25,000"
+                placeholder="e.g., ₹10,00,000 - ₹25,00,000"
               />
             </div>
             <div className="form-group">

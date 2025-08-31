@@ -1,0 +1,60 @@
+.lead-master-details-container {
+  max-width: 900px;
+  margin: 2rem auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  padding: 2rem;
+}
+.lead-master-details-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+.lead-master-details-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.lead-master-details-tab {
+  background: #f3f4f6;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px 8px 0 0;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.lead-master-details-tab.active {
+  background: #2563eb;
+  color: #fff;
+}
+.lead-master-details-tab-content {
+  background: #f9fafb;
+  border-radius: 0 0 8px 8px;
+  padding: 2rem;
+  min-height: 300px;
+}
+.lead-master-details-tab-content h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.lead-master-details-tab-content p {
+  margin-bottom: 0.5rem;
+}
+.lead-master-details-tab-content button {
+  margin-right: 1rem;
+  margin-bottom: 0.5rem;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.lead-master-details-tab-content button:hover {
+  background: #1d4ed8;
+}

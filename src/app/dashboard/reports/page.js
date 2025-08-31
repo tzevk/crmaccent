@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navigation from '../../../components/navigation/Navigation';
-import './reports-refined.css';
+import './reports.css';
 
 export default function ReportsPage() {
   const [user, setUser] = useState(null);
@@ -252,32 +252,39 @@ export default function ReportsPage() {
 
   if (loading) {
     return (
-      <div className="reports-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading report data...</p>
+      <div className="reports-page">
+        <Navigation />
+        <div className="reports-loading">
+          <div className="spinner"></div>
+          <p>Loading report data...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="reports-container">
-      <Navigation user={user} />
+    <div className="reports-page">
+      <Navigation />
       
       <main className="reports-main">
-        <div className="reports-header">
-          <h1>Reports Dashboard</h1>
-          <div className="reports-actions">
-            <button 
-              onClick={() => exportReport(exportFormat)} 
-              className="export-btn"
-              disabled={currentData.length === 0}
-            >
-              <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-              </svg>
-              Export Report
-            </button>
-            <select 
+        <div className="reports-container">
+          <div className="reports-header">
+            <div className="header-content">
+              <h1>Reports Dashboard</h1>
+              <p>Generate and analyze comprehensive business reports</p>
+            </div>
+            <div className="header-actions">
+              <button 
+                onClick={() => exportReport(exportFormat)} 
+                className="btn-primary"
+                disabled={currentData.length === 0}
+              >
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                </svg>
+                Export Report
+              </button>
+              <select 
               value={exportFormat}
               onChange={(e) => setExportFormat(e.target.value)}
               className="format-select"
@@ -507,6 +514,7 @@ export default function ReportsPage() {
               <p>No data available for the selected filters and date range.</p>
             </div>
           )}
+        </div>
         </div>
       </main>
     </div>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import Navigation from '@/components/navigation/Navigation';
 import '../leads.css';
 import './lead-detail.css';
@@ -176,9 +175,6 @@ export default function LeadDetailPage({ params }) {
               </div>
             </div>
             <div className="header-actions">
-              <Link href={`/leads/edit/${lead.id}`} className="btn-primary">
-                Edit Lead
-              </Link>
               <button 
                 className="btn-secondary"
                 onClick={() => setShowFollowupModal(true)}

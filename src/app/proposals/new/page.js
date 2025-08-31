@@ -62,12 +62,33 @@ export default function CreateProposalPage() {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
       
+      // Check for template parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const templateParam = urlParams.get('template');
+      
       // Auto-fill some fields
       setFormData(prev => ({
         ...prev,
         proposalId: `PROP-${Date.now()}`,
-        preparedBy: parsedUser.full_name || parsedUser.username || ''
+        preparedBy: parsedUser.full_name || parsedUser.username || '',
+        currency: 'INR' // Default to INR
       }));
+      
+      // If template is provided, pre-fill form with template data
+      if (templateParam) {
+        try {
+          const template = JSON.parse(decodeURIComponent(templateParam));
+          setFormData(prev => ({
+            ...prev,
+            proposalTitle: template.name || '',
+            scopeOfWork: template.description || '',
+            currency: template.default_currency || 'INR',
+            internalNotes: `Created from template: ${template.name}`
+          }));
+        } catch (error) {
+          console.error('Error parsing template data:', error);
+        }
+      }
     } catch (error) {
       console.error('Error parsing user data:', error);
       router.push('/login');
@@ -391,7 +412,7 @@ export default function CreateProposalPage() {
                     onChange={handleInputChange}
                   >
                     <option value="INR">INR (₹)</option>
-                    <option value="USD">USD ($)</option>
+                    <option value="INR">INR (₹)</option>
                     <option value="EUR">EUR (€)</option>
                     <option value="GBP">GBP (£)</option>
                   </select>

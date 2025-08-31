@@ -412,7 +412,7 @@ export default function CompanyForm({ company, onSubmit, onCancel }) {
                 onChange={handleInputChange}
               >
                 <option value="INR">INR (₹)</option>
-                <option value="USD">USD ($)</option>
+                <option value="INR">INR (₹)</option>
                 <option value="EUR">EUR (€)</option>
                 <option value="GBP">GBP (£)</option>
                 <option value="CAD">CAD</option>

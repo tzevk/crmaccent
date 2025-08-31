@@ -57,7 +57,7 @@ export default function NavigationMinimal({ user }) {
       color: 'var(--primary)',
       items: [
         { name: 'Overview', href: '/dashboard' },
-        { name: 'Analytics', href: '/dashboard/analytics' },
+        { name: 'Conversion Funnel', href: '/analytics/funnel' },
         { name: 'Reports', href: '/dashboard/reports' },
       ],
     },
@@ -69,7 +69,6 @@ export default function NavigationMinimal({ user }) {
         </svg>
       ),
       color: '#3B82F6',
-      badge: '12',
       items: [
         { name: 'All Leads', href: '/leads' },
         { name: 'Add Lead', href: '/leads/new' },
@@ -85,11 +84,10 @@ export default function NavigationMinimal({ user }) {
         </svg>
       ),
       color: '#10B981',
-      badge: '5',
       items: [
         { name: 'All Proposals', href: '/proposals' },
         { name: 'Create New', href: '/proposals/new' },
-        { name: 'Templates', href: '/proposals/templates' },
+        { name: 'Templates', href: '/proposals/template' },
         { name: 'Won/Lost', href: '/proposals/archive' },
       ],
     },
@@ -103,7 +101,7 @@ export default function NavigationMinimal({ user }) {
       color: '#8B5CF6',
       items: [
         { name: 'Active Projects', href: '/projects' },
-        { name: 'Create Project', href: '/projects/new' },
+        { name: 'Add Project', href: '/projects/add' },
         { name: 'Timeline', href: '/projects/timeline' },
         { name: 'Resources', href: '/projects/resources' },
       ],
@@ -117,11 +115,7 @@ export default function NavigationMinimal({ user }) {
       ),
       color: '#F59E0B',
       items: [
-        { name: 'Lead Master', href: '/master/leads' },
-        { name: 'Project Master', href: '/master/projects' },
-        { name: 'Proposal Master', href: '/master/proposals' },
         { name: 'Company Master', href: '/companies' },
-        { name: 'Employee Master', href: '/master/employees' },
         { name: 'User Master', href: '/master/users' },
         { name: 'Categories', href: '/master/categories' },
         { name: 'Settings', href: '/master/settings' },

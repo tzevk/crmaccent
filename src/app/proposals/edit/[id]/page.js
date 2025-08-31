@@ -407,7 +407,7 @@ export default function ProposalEditPage() {
                     onChange={(e) => handleInputChange('currency', e.target.value)}
                   >
                     <option value="INR">INR (₹)</option>
-                    <option value="USD">USD ($)</option>
+                    <option value="INR">INR (₹)</option>
                     <option value="EUR">EUR (€)</option>
                     <option value="GBP">GBP (£)</option>
                   </select>

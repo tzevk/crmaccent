@@ -1,0 +1,824 @@
+/* Compact Master Page Styles */
+.leads-stats {
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  padding: 16px;
+}
+
+.stat-card h3 {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.stat-number {
+  font-size: 20px;
+  margin: 4px 0;
+}
+
+.stat-change {
+  font-size: 12px;
+}
+
+/* Tabs Navigation */
+.tabs-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+  border: 1px solid #f1f5f9;
+}
+
+.tabs-nav {
+  display: flex;
+  border-bottom: 2px solid #f1f5f9;
+  padding: 0 20px;
+  overflow-x: auto;
+  background: #fafbfc;
+  border-radius: 12px 12px 0 0;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border: none;
+  background: none;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: fit-content;
+  border-radius: 8px 8px 0 0;
+}
+
+.tab-button:hover {
+  color: #374151;
+  background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+  transform: translateY(-1px);
+}
+
+.tab-button.active {
+  color: #1e40af;
+  border-bottom-color: #3b82f6;
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  font-weight: 700;
+}
+
+.tab-button svg {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.tab-button:hover svg {
+  transform: scale(1.1);
+}
+
+.tab-content {
+  padding: 24px;
+  background: white;
+  border-radius: 0 0 12px 12px;
+  min-height: 300px;
+}
+
+.tab-content {
+  padding: 20px;
+}
+
+/* Compact Info Cards */
+.info-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f1f5f9;
+  transition: all 0.2s ease;
+}
+
+.info-card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-item label {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.info-item span {
+  font-size: 13px;
+  color: #374151;
+  font-weight: 400;
+}
+
+/* Follow-up Styling */
+.followup-form {
+  transition: all 0.3s ease;
+  border: 2px solid #e2e8f0 !important;
+}
+
+.followup-item {
+  transition: all 0.2s ease;
+}
+
+.followup-item:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.priority-badge.low {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.priority-badge.medium {
+  background: #fefce8;
+  color: #ca8a04;
+}
+
+.priority-badge.high {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.priority-badge.urgent {
+  background: #fdf2f8;
+  color: #be185d;
+}
+
+.followups-list {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.followups-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.followups-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.followups-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.followups-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Action buttons grid styles (keeping for consistency) */
+.btn-primary, .btn-secondary, .btn-convert, .btn-dropdown {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.btn-secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-convert:hover {
+  background: linear-gradient(135deg, #059669, #047857) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+}
+
+.btn-dropdown {
+  background-color: #f9fafb;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+/* Reduce overall spacing */
+.leads-table-container {
+  padding: 16px;
+}
+
+.lead-detail-content {
+  gap: 12px;
+}
+
+.info-cards {
+  gap: 12px;
+}
+
+/* Dropdown styling */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: white;
+  min-width: 160px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-radius: 6px;
+  z-index: 1000;
+  border: 1px solid #e5e7eb;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.dropdown-content a {
+  color: #374151;
+  padding: 8px 12px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-content a:hover {
+  background-color: #f9fafb;
+}
+
+.dropdown-content a.delete-action:hover {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+/* Form Input Styles for Editing */
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #374151;
+  background-color: white;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.form-select {
+  cursor: pointer;
+}
+
+/* Disabled button states */
+.btn-primary:disabled, .btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary:disabled:hover, .btn-secondary:disabled:hover {
+  transform: none;
+}
+
+/* Editing Mode Styles */
+.editing-mode {
+  border: 3px solid #3b82f6;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  animation: editModeEntry 0.3s ease-out;
+}
+
+@keyframes editModeEntry {
+  from {
+    border-color: #e2e8f0;
+    background: white;
+  }
+  to {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  }
+}
+
+.editing-mode .leads-header {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  border-radius: 9px 9px 0 0;
+  position: relative;
+}
+
+.editing-mode .leads-header::after {
+  content: "EDITING MODE";
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.editing-mode .leads-header h1,
+.editing-mode .leads-header p {
+  color: white;
+}
+
+/* Enhanced Form Styling */
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background-color: #ffffff;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+  background-color: #fafbff;
+  transform: translateY(-1px);
+}
+
+.form-input:hover, .form-select:hover, .form-textarea:hover {
+  border-color: #cbd5e1;
+  background-color: #fafbfc;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 70px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.form-select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%233b82f6'><path fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 18px;
+  padding-right: 40px;
+}
+
+.form-select:focus {
+  background-image: url("data:image/svg+xml;charset=US-ASCII,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%231d4ed8'><path fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/></svg>");
+}
+
+/* Improved info-grid styling for better readability */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-item label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+
+.info-item span {
+  font-size: 15px;
+  color: #111827;
+  line-height: 1.5;
+  padding: 8px 0;
+  min-height: 24px;
+  font-weight: 500;
+}
+
+/* Empty state styling */
+.info-item span:empty::after,
+.info-item span:has-text("N/A") {
+  color: #9ca3af;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Read-only mode enhancements */
+.info-item span {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.info-item span:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+/* Special styling for different data types */
+.info-item span[title*="email"] {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.info-item span[title*="phone"] {
+  color: #059669;
+  font-family: monospace;
+}
+
+.info-item span[title*="url"] {
+  color: #7c3aed;
+  text-decoration: underline;
+}
+
+/* Editing mode visual indicators */
+.editing-mode .info-card {
+  border: 2px solid #3b82f6;
+  background: linear-gradient(135deg, #fefeff, #f8faff);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
+}
+
+.editing-mode .info-card h3 {
+  color: #1e40af;
+  border-bottom-color: #3b82f6;
+}
+
+.editing-mode .info-item label {
+  color: #1e40af;
+  font-weight: 800;
+}
+
+/* Enhanced button styling */
+.header-actions button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Action buttons in actions tab */
+.action-buttons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  background: white;
+  color: #374151;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.action-btn.follow-up {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+}
+
+.action-btn.follow-up:hover {
+  background: linear-gradient(135deg, #fde68a, #fcd34d);
+  border-color: #d97706;
+}
+
+.action-btn.email {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
+}
+
+.action-btn.email:hover {
+  background: linear-gradient(135deg, #bfdbfe, #93c5fd);
+  border-color: #1d4ed8;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .tabs-nav {
+    padding: 0 12px;
+  }
+  
+  .tab-button {
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+  
+  .info-card {
+    padding: 20px;
+  }
+  
+  .action-buttons-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .editing-mode .leads-header::after {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .header-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Enhanced Editing Mode Styles - Consistent Color Scheme */
+.editing-mode {
+  border: 3px solid #3b82f6;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  animation: editModeEntry 0.3s ease-out;
+  position: relative;
+}
+
+@keyframes editModeEntry {
+  from {
+    border-color: #e2e8f0;
+    background: white;
+  }
+  to {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
+  }
+}
+
+.editing-mode .leads-header {
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  color: white;
+  border-radius: 9px 9px 0 0;
+  position: relative;
+}
+
+.editing-mode .leads-header::after {
+  content: "EDITING MODE";
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.editing-mode .leads-header h1,
+.editing-mode .leads-header p {
+  color: white;
+}
+
+/* Editing mode info cards maintain color scheme */
+.editing-mode .info-card {
+  border: 2px solid #e2e8f0;
+  background: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+}
+
+.editing-mode .info-item label {
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.editing-mode .info-item span {
+  background: transparent;
+  border: none;
+  padding: 8px 0;
+}
+
+/* Form inputs blend with the overall design */
+.editing-mode .form-input,
+.editing-mode .form-select,
+.editing-mode .form-textarea {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  color: #1e293b;
+}
+
+.editing-mode .form-input:focus,
+.editing-mode .form-select:focus,
+.editing-mode .form-textarea:focus {
+  background: white;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.editing-mode .tabs-container {
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.12);
+  border: 1px solid #dbeafe;
+}
+
+/* Enhanced Editing Mode Styles - Color Scheme Consistency */
+.editing-mode {
+  border: 3px solid #3b82f6;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  animation: editModeEntry 0.3s ease-out;
+  position: relative;
+}
+
+@keyframes editModeEntry {
+  from {
+    border-color: #e2e8f0;
+    background: white;
+  }
+  to {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
+  }
+}
+
+.editing-mode .leads-header {
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  color: white;
+  border-radius: 9px 9px 0 0;
+  position: relative;
+}
+
+.editing-mode .leads-header::after {
+  content: "EDITING MODE";
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.editing-mode .leads-header h1,
+.editing-mode .leads-header p {
+  color: white;
+}
+
+/* Editing mode info cards */
+.editing-mode .info-card {
+  border: 2px solid #e2e8f0;
+  background: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+}
+
+.editing-mode .info-item label {
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.editing-mode .info-item span {
+  background: transparent;
+  border: none;
+  padding: 8px 0;
+}
+
+/* Form inputs maintain design consistency */
+.editing-mode .form-input,
+.editing-mode .form-select,
+.editing-mode .form-textarea {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  color: #1e293b;
+}
+
+.editing-mode .form-input:focus,
+.editing-mode .form-select:focus,
+.editing-mode .form-textarea:focus {
+  background: white;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.editing-mode .tabs-container {
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.12);
+  border: 1px solid #dbeafe;
+}

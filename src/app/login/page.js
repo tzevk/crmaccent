@@ -76,7 +76,7 @@ export default function LoginPage() {
                 {/* Header with gradient */}
         <div className="login-header">
           <img 
-            src="crm-logo.png" 
+            src="/crm-logo.png" 
             alt="Company Logo" 
             className="company-logo"
           />
