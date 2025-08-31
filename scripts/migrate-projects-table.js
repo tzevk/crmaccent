@@ -162,7 +162,9 @@ async function migrateProjectsTable() {
       
       console.log('✓ Created projects table');
 
-      // Insert sample data
+      // Sample data insertion commented out for production
+      // Uncomment below to insert test data for development
+      /*
       await connection.execute(`
         INSERT INTO projects (
           project_number, project_name, client_name, city, received_date, 
@@ -188,8 +190,8 @@ async function migrateProjectsTable() {
           '["Tom Anderson", "Lisa Parker", "Ryan Clark", "Amy Taylor"]', 'Proposal'
         )
       `);
-
       console.log('✓ Inserted sample data');
+      */
     }
 
     console.log('Projects table migration completed successfully!');

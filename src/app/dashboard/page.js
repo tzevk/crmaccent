@@ -77,7 +77,7 @@ export default function DashboardPage() {
         revenue: totalRevenue,
         activeProjects: activeProjects,
         conversionRate: Math.round(conversionRate),
-        totalTasks: Math.floor(Math.random() * 20) + 5 // Simulated for now
+        totalTasks: 0 // Will be calculated from actual task data when implemented
       });
 
       // Set recent leads (last 5)
@@ -115,22 +115,17 @@ export default function DashboardPage() {
 
       setRecentActivities(activities.slice(0, 6));
 
-      // Generate mock tasks for demonstration
-      setUpcomingTasks([
-        { id: 1, title: 'Follow up with ABC Corp', priority: 'high', due: '2 days', type: 'call' },
-        { id: 2, title: 'Prepare proposal for XYZ Ltd', priority: 'medium', due: '1 week', type: 'document' },
-        { id: 3, title: 'Team meeting', priority: 'low', due: 'Tomorrow', type: 'meeting' },
-        { id: 4, title: 'Review quarterly report', priority: 'medium', due: '3 days', type: 'review' }
-      ]);
+      // Set empty tasks initially - will be populated from actual task API when implemented
+      setUpcomingTasks([]);
 
-      // Generate top performers (mock data based on employees)
+      // Generate top performers based on actual employee data
       const performers = employees.slice(0, 3).map((emp, idx) => ({
         id: emp.id,
         name: `${emp.firstName} ${emp.lastName}`,
         role: emp.role || 'Sales Representative',
-        deals: Math.floor(Math.random() * 20) + 10,
-        revenue: Math.floor(Math.random() * 500000) + 100000,
-        growth: Math.floor(Math.random() * 40) + 10
+        deals: 0, // Will be calculated from actual deals
+        revenue: 0, // Will be calculated from actual revenue
+        growth: 0 // Will be calculated from actual performance metrics
       }));
       
       setTopPerformers(performers);
@@ -205,7 +200,7 @@ export default function DashboardPage() {
           <div className="header-content">
             <div className="header-text">
               <h1 className="dashboard-title">
-                Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}, {user.full_name || user.firstName || user.username}! 
+                Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}, {user.firstName || user.username}!
               </h1>
               <p className="dashboard-subtitle">
                 Here's what's happening in your CRM today

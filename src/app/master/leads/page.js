@@ -33,43 +33,13 @@ export default function LeadMasterPage() {
     try {
       setLoading(true);
       
-      // Initialize with default data (you can replace this with API calls later)
-      setLeadSources([
-        { id: 1, name: 'Website', description: 'Leads from website forms', color: '#3B82F6', active: true, count: 45 },
-        { id: 2, name: 'Social Media', description: 'Facebook, LinkedIn, Instagram', color: '#10B981', active: true, count: 32 },
-        { id: 3, name: 'Email Campaign', description: 'Marketing email campaigns', color: '#F59E0B', active: true, count: 28 },
-        { id: 4, name: 'Cold Calling', description: 'Outbound calling campaigns', color: '#8B5CF6', active: true, count: 19 },
-        { id: 5, name: 'Referral', description: 'Customer referrals', color: '#EF4444', active: true, count: 23 },
-      ]);
-
-      setLeadStatuses([
-        { id: 1, name: 'New', description: 'Newly created leads', color: '#3B82F6', active: true, count: 67 },
-        { id: 2, name: 'Contacted', description: 'Initial contact made', color: '#F59E0B', active: true, count: 34 },
-        { id: 3, name: 'Qualified', description: 'Qualified prospects', color: '#10B981', active: true, count: 28 },
-        { id: 4, name: 'Proposal Sent', description: 'Proposal submitted', color: '#8B5CF6', active: true, count: 15 },
-        { id: 5, name: 'Won', description: 'Converted to customer', color: '#059669', active: true, count: 12 },
-        { id: 6, name: 'Lost', description: 'Lost opportunity', color: '#EF4444', active: true, count: 8 },
-      ]);
-
-      setLeadCategories([
-        { id: 1, name: 'Hot Lead', description: 'High probability leads', color: '#EF4444', active: true, count: 23 },
-        { id: 2, name: 'Warm Lead', description: 'Medium probability leads', color: '#F59E0B', active: true, count: 45 },
-        { id: 3, name: 'Cold Lead', description: 'Low probability leads', color: '#3B82F6', active: true, count: 78 },
-      ]);
-
-      setPriorities([
-        { id: 1, name: 'High', description: 'Urgent follow-up required', color: '#EF4444', active: true, count: 15 },
-        { id: 2, name: 'Medium', description: 'Standard follow-up', color: '#F59E0B', active: true, count: 89 },
-        { id: 3, name: 'Low', description: 'Can wait for follow-up', color: '#10B981', active: true, count: 42 },
-      ]);
-
-      setIndustries([
-        { id: 1, name: 'Technology', description: 'Software, Hardware, IT Services', color: '#3B82F6', active: true, count: 34 },
-        { id: 2, name: 'Healthcare', description: 'Medical, Pharmaceutical', color: '#10B981', active: true, count: 28 },
-        { id: 3, name: 'Finance', description: 'Banking, Insurance, Investment', color: '#F59E0B', active: true, count: 22 },
-        { id: 4, name: 'Manufacturing', description: 'Production, Industrial', color: '#8B5CF6', active: true, count: 19 },
-        { id: 5, name: 'Retail', description: 'E-commerce, Stores', color: '#EF4444', active: true, count: 31 },
-      ]);
+      // TODO: Replace with actual API calls to load master data
+      // Initialize with empty arrays - data should come from database
+      setLeadSources([]);
+      setLeadStatuses([]);
+      setLeadCategories([]);
+      setPriorities([]);
+      setIndustries([]);
 
     } catch (error) {
       console.error('Error loading master data:', error);

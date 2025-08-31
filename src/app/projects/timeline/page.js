@@ -392,7 +392,7 @@ export default function ProjectTimelinePage() {
                           style={{
                             backgroundColor: getStatusColor(project.current_status),
                             width: `${project.duration / 10}%`,
-                            marginLeft: `${Math.random() * 20}%` // Placeholder positioning
+                            marginLeft: '0%' // Remove random positioning
                           }}
                         >
                           <span className="gantt-bar-label">{Math.round(project.progress)}%</span>
