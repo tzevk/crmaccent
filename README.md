@@ -25,7 +25,7 @@ A modern Customer Relationship Management system built with Next.js and MySQL.
    This will create the users table and a default admin user.
 
 4. **Default Login Credentials**
-   - Username: `admin`
+   - Email/Username: `admin@crmaccent.com`
    - Password: `admin123`
 
 5. **Start Development Server**

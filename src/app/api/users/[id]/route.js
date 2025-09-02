@@ -22,14 +22,14 @@ export async function GET(request, { params }) {
     const [rows] = await connection.execute(`
       SELECT 
         id,
-        name,
+        username,
         email,
+        full_name as name,
         role,
-        department,
-        phone,
-        is_active,
+        status as is_active,
+        employee_id,
         created_at,
-        updated_at
+        last_login
       FROM users 
       WHERE id = ?
     `, [id]);
@@ -84,7 +84,7 @@ export async function PATCH(request, { params }) {
     const updateValues = [];
     
     if (body.name !== undefined) {
-      updateFields.push('name = ?');
+      updateFields.push('full_name = ?');
       updateValues.push(body.name);
     }
     
@@ -113,13 +113,17 @@ export async function PATCH(request, { params }) {
       
       updateFields.push('email = ?');
       updateValues.push(body.email);
+      
+      // Also update username based on email
+      const newUsername = body.email.split('@')[0];
+      updateFields.push('username = ?');
+      updateValues.push(newUsername);
     }
     
     if (body.password !== undefined) {
-      // Hash password (in production, use bcrypt)
-      const hashedPassword = body.password; // Password hashing should be implemented for production
-      updateFields.push('password = ?');
-      updateValues.push(hashedPassword);
+      // Store password as plain text (not recommended for production)
+      updateFields.push('password_hash = ?');
+      updateValues.push(body.password);
     }
     
     if (body.role !== undefined) {
@@ -127,19 +131,9 @@ export async function PATCH(request, { params }) {
       updateValues.push(body.role);
     }
     
-    if (body.department !== undefined) {
-      updateFields.push('department = ?');
-      updateValues.push(body.department);
-    }
-    
-    if (body.phone !== undefined) {
-      updateFields.push('phone = ?');
-      updateValues.push(body.phone);
-    }
-    
     if (body.is_active !== undefined) {
-      updateFields.push('is_active = ?');
-      updateValues.push(body.is_active);
+      updateFields.push('status = ?');
+      updateValues.push(body.is_active ? 'active' : 'inactive');
     }
 
     if (updateFields.length === 0) {
@@ -164,14 +158,14 @@ export async function PATCH(request, { params }) {
     const [updatedUser] = await connection.execute(`
       SELECT 
         id,
-        name,
+        username,
         email,
+        full_name as name,
         role,
-        department,
-        phone,
-        is_active,
+        status as is_active,
+        employee_id,
         created_at,
-        updated_at
+        last_login
       FROM users 
       WHERE id = ?
     `, [id]);

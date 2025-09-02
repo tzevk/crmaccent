@@ -116,7 +116,7 @@ export default function NavigationMinimal({ user }) {
       color: '#F59E0B',
       items: [
         { name: 'Company Master', href: '/companies' },
-        { name: 'User Master', href: '/master/users' },
+        { name: 'User Management', href: '/users' },
         { name: 'Categories', href: '/master/categories' },
         { name: 'Settings', href: '/master/settings' },
         { name: 'System Config', href: '/master/config' },

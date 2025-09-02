@@ -14,10 +14,12 @@ export async function POST(request) {
         full_name VARCHAR(100),
         role ENUM('admin', 'manager', 'user') DEFAULT 'user',
         status ENUM('active', 'inactive') DEFAULT 'active',
+        employee_id INT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_login TIMESTAMP NULL,
         INDEX idx_username (username),
-        INDEX idx_email (email)
+        INDEX idx_email (email),
+        INDEX idx_employee_id (employee_id)
       )
     `);
 
@@ -29,16 +31,17 @@ export async function POST(request) {
     if (existingUsers[0].count === 0) {
       // Create default admin user (plain text password)
       const defaultPassword = 'admin123';
+      const adminEmail = 'admin@crmaccent.com';
 
       await db.execute(
         'INSERT INTO users (username, password_hash, email, full_name, role) VALUES (?, ?, ?, ?, ?)',
-        ['admin', defaultPassword, 'admin@crmaccent.com', 'System Administrator', 'admin']
+        [adminEmail, defaultPassword, adminEmail, 'System Administrator', 'admin']
       );
 
       return Response.json({
         message: 'Database setup completed successfully',
         defaultCredentials: {
-          username: 'admin',
+          username: 'admin@crmaccent.com',
           password: 'admin123'
         }
       });

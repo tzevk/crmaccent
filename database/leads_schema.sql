@@ -86,17 +86,18 @@ CREATE TABLE IF NOT EXISTS project_statuses (
 -- Users table (if not exists)
 CREATE TABLE IF NOT EXISTS users (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    role VARCHAR(50) DEFAULT 'user',
-    department VARCHAR(100),
-    phone VARCHAR(20),
-    is_active BOOLEAN DEFAULT TRUE,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    full_name VARCHAR(100),
+    role ENUM('admin', 'manager', 'user') DEFAULT 'user',
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    employee_id INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_user_email (email),
-    INDEX idx_user_role (role)
+    last_login TIMESTAMP NULL,
+    INDEX idx_username (username),
+    INDEX idx_email (email),
+    INDEX idx_employee_id (employee_id)
 );
 
 -- 2. Main Leads Table
@@ -298,11 +299,11 @@ INSERT INTO cities (name, state, country) VALUES
 ON DUPLICATE KEY UPDATE state = VALUES(state);
 
 -- Insert default user if not exists
-INSERT INTO users (name, email, password, role, department) VALUES
-('System Admin', 'admin@crmaccent.com', 'hashed_password_here', 'admin', 'IT'),
-('Sales Manager', 'sales@crmaccent.com', 'hashed_password_here', 'manager', 'Sales'),
-('Sales Rep 1', 'rep1@crmaccent.com', 'hashed_password_here', 'user', 'Sales'),
-('Sales Rep 2', 'rep2@crmaccent.com', 'hashed_password_here', 'user', 'Sales'),
+INSERT INTO users (username, password_hash, email, full_name, role, status) VALUES
+('admin', 'admin123', 'admin@crmaccent.com', 'System Admin', 'admin', 'active'),
+('salesmanager', 'temp123', 'sales@crmaccent.com', 'Sales Manager', 'manager', 'active'),
+('rep1', 'temp123', 'rep1@crmaccent.com', 'Sales Rep 1', 'user', 'active'),
+('rep2', 'temp123', 'rep2@crmaccent.com', 'Sales Rep 2', 'user', 'active'),
 ('Sales Rep 3', 'rep3@crmaccent.com', 'hashed_password_here', 'user', 'Sales')
 ON DUPLICATE KEY UPDATE role = VALUES(role);
 

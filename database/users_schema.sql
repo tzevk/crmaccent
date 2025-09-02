@@ -3,31 +3,30 @@
 
 CREATE TABLE IF NOT EXISTS users (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    role VARCHAR(50) DEFAULT 'user',
-    department VARCHAR(100),
-    phone VARCHAR(20),
-    is_active BOOLEAN DEFAULT TRUE,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    full_name VARCHAR(100),
+    role ENUM('admin', 'manager', 'user') DEFAULT 'user',
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    employee_id INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_user_email (email),
-    INDEX idx_user_role (role),
-    INDEX idx_user_department (department),
-    INDEX idx_user_active (is_active)
+    last_login TIMESTAMP NULL,
+    INDEX idx_username (username),
+    INDEX idx_email (email),
+    INDEX idx_employee_id (employee_id)
 );
 
 -- Insert default admin user if no users exist
-INSERT IGNORE INTO users (name, email, password, role, department, is_active) 
-SELECT 'System Admin', 'admin@crmaccent.com', 'admin123', 'admin', 'Administration', TRUE
+INSERT IGNORE INTO users (username, password_hash, email, full_name, role, status) 
+SELECT 'admin', 'admin123', 'admin@crmaccent.com', 'System Administrator', 'admin', 'active'
 WHERE NOT EXISTS (SELECT 1 FROM users LIMIT 1);
 
 -- Sample data for testing (optional)
-INSERT IGNORE INTO users (name, email, password, role, department, phone, is_active) VALUES
-('John Manager', 'john.manager@example.com', 'temp123', 'manager', 'Sales', '+91 9876543210', TRUE),
-('Sarah Executive', 'sarah.exec@example.com', 'temp123', 'executive', 'Marketing', '+91 9876543211', TRUE),
-('Mike User', 'mike.user@example.com', 'temp123', 'user', 'Development', '+91 9876543212', TRUE);
+INSERT IGNORE INTO users (username, password_hash, email, full_name, role, status) VALUES
+('johnmanager', 'temp123', 'john.manager@example.com', 'John Manager', 'manager', 'active'),
+('sarahexec', 'temp123', 'sarah.exec@example.com', 'Sarah Executive', 'user', 'active'),
+('mikeuser', 'temp123', 'mike.user@example.com', 'Mike User', 'user', 'active');
 
 -- Display table info
 SELECT 'users table created/verified successfully' as message;

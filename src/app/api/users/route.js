@@ -20,16 +20,15 @@ export async function GET() {
     const [rows] = await connection.execute(`
       SELECT 
         id,
-        name,
+        username,
         email,
+        full_name as name,
         role,
-        department,
-        phone,
-        is_active,
+        status as is_active,
         created_at,
-        updated_at
+        last_login
       FROM users 
-      ORDER BY name ASC
+      ORDER BY full_name ASC
     `);
     
     return NextResponse.json(rows);
@@ -59,7 +58,7 @@ export async function POST(request) {
   
   try {
     const body = await request.json();
-    const { name, email, password, role = 'user', department, phone, is_active = true } = body;
+    const { name, email, password, role = 'user', employee_id } = body;
 
     // Validate required fields
     if (!name || !email || !password) {
@@ -93,26 +92,39 @@ export async function POST(request) {
       );
     }
 
-    // Hash password (in production, use bcrypt)
-    // For now, we'll store it as plain text (not recommended for production)
-    const hashedPassword = password; // Password hashing should be implemented for production
+    // Create username from email (part before @)
+    const username = email.split('@')[0];
 
-    // Insert new user
-    const [result] = await connection.execute(`
-      INSERT INTO users (name, email, password, role, department, phone, is_active) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [name, email, hashedPassword, role, department, phone, is_active]);
+    // Check if username already exists
+    const [existingUsername] = await connection.execute(
+      'SELECT id FROM users WHERE username = ?',
+      [username]
+    );
+    
+    if (existingUsername.length > 0) {
+      return NextResponse.json(
+        { error: 'Username derived from email already exists' },
+        { status: 409 }
+      );
+    }
+
+    // Insert new user (password stored as plain text - not recommended for production)
+    const insertQuery = `INSERT INTO users (username, password_hash, email, full_name, role, status, employee_id) 
+                         VALUES (?, ?, ?, ?, ?, 'active', ?)`;
+    
+    const insertParams = [username, password, email, name, role, employee_id];
+    
+    const [result] = await connection.execute(insertQuery, insertParams);
 
     // Fetch the created user
     const [newUser] = await connection.execute(`
       SELECT 
         id,
-        name,
+        username,
         email,
+        full_name as name,
         role,
-        department,
-        phone,
-        is_active,
+        status as is_active,
         created_at
       FROM users 
       WHERE id = ?

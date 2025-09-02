@@ -13,9 +13,9 @@ export async function POST(request) {
 
     const db = getDb();
     
-    // Query to find user by username
+    // Query to find user by username (using email as username)
     const [rows] = await db.execute(
-      'SELECT id, username, password_hash, email, full_name, role, status FROM users WHERE username = ? AND status = "active"',
+      'SELECT id, username, password_hash, email, full_name, role, status FROM users WHERE email = ? AND status = "active"',
       [username]
     );
 

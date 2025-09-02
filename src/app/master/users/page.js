@@ -23,6 +23,8 @@ export default function UserMasterPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewData, setPreviewData] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [generatedCredentials, setGeneratedCredentials] = useState([]);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -294,6 +296,61 @@ export default function UserMasterPage() {
     }
   };
 
+  // Function to generate secure random password
+  const generateRandomPassword = (length = 12) => {
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+    
+    const allChars = uppercase + lowercase + numbers + symbols;
+    let password = '';
+    
+    // Ensure at least one character from each type
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += symbols[Math.floor(Math.random() * symbols.length)];
+    
+    // Fill the rest randomly
+    for (let i = password.length; i < length; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+    
+    // Shuffle the password
+    return password.split('').sort(() => Math.random() - 0.5).join('');
+  };
+
+  const downloadCredentials = () => {
+    let credentialsText = `User Account Credentials - Generated on ${new Date().toLocaleString()}\n\n`;
+    credentialsText += "=" * 60 + "\n";
+    credentialsText += "IMPORTANT: Please save these credentials securely!\n";
+    credentialsText += "Users should change their passwords on first login.\n";
+    credentialsText += "=" * 60 + "\n\n";
+    
+    generatedCredentials.forEach((cred, index) => {
+      credentialsText += `${index + 1}. ${cred.name}\n`;
+      credentialsText += `   Email: ${cred.email}\n`;
+      credentialsText += `   Password: ${cred.password}\n`;
+      credentialsText += `   Role: ${cred.role}\n`;
+      credentialsText += `   Status: Active\n\n`;
+    });
+    
+    credentialsText += "=" * 60 + "\n";
+    credentialsText += "Note: These credentials are for CRM system access.\n";
+    credentialsText += "For security, this file should be stored securely and deleted after distribution.\n";
+    
+    const blob = new Blob([credentialsText], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `user_credentials_${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
   const convertToUsers = async () => {
     if (selectedEmployees.length === 0) {
       alert('Please select at least one employee to convert');
@@ -307,8 +364,21 @@ export default function UserMasterPage() {
         selectedEmployees.includes(emp.id)
       );
 
-      const userPromises = selectedEmpData.map(emp => 
-        fetch('/api/users', {
+      // Generate random passwords for each employee
+      const employeeCredentials = [];
+
+      const userPromises = selectedEmpData.map(emp => {
+        const randomPassword = generateRandomPassword(12);
+        
+        // Store credentials for later display
+        employeeCredentials.push({
+          name: `${emp.firstName} ${emp.lastName}`,
+          email: emp.email,
+          password: randomPassword,
+          role: emp.role || 'user'
+        });
+
+        return fetch('/api/users', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -316,14 +386,15 @@ export default function UserMasterPage() {
           body: JSON.stringify({
             name: `${emp.firstName} ${emp.lastName}`,
             email: emp.email,
-            password: emp.emailPassword || 'temp123', // Use existing password or default
+            password: randomPassword,
             role: emp.role || 'user',
             department: emp.department,
             phone: emp.mobile || emp.phone,
-            is_active: emp.employeeStatus === 'Working'
+            is_active: emp.employeeStatus === 'Working',
+            employee_id: emp.id
           })
-        })
-      );
+        });
+      });
 
       const responses = await Promise.all(userPromises);
       const results = await Promise.all(
@@ -334,7 +405,11 @@ export default function UserMasterPage() {
       const failed = results.length - successful;
 
       if (successful > 0) {
-        alert(`Successfully converted ${successful} employees to user accounts!`);
+        // Store successful credentials to show in modal
+        const successfulCredentials = employeeCredentials.slice(0, successful);
+        setGeneratedCredentials(successfulCredentials);
+        setShowCredentialsModal(true);
+        
         setSelectedEmployees([]);
         fetchData(); // Refresh data
       }
@@ -1053,6 +1128,79 @@ export default function UserMasterPage() {
               </button>
               <button className="btn-primary" onClick={handleSaveUser}>
                 {editingUser ? 'Update User' : 'Add User'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generated Credentials Modal */}
+      {showCredentialsModal && (
+        <div className="modal-overlay">
+          <div className="modal-content credentials-modal">
+            <div className="modal-header">
+              <h3>🔐 User Account Credentials Generated</h3>
+              <button className="modal-close" onClick={() => setShowCredentialsModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="credentials-warning">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 18.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <div>
+                  <strong>Important Security Notice:</strong>
+                  <p>These credentials have been generated with secure random passwords. Please save them immediately and distribute them securely to the respective users.</p>
+                </div>
+              </div>
+
+              <div className="credentials-list">
+                <h4>Generated User Accounts ({generatedCredentials.length})</h4>
+                <div className="credentials-table">
+                  <div className="credentials-header">
+                    <span>Name</span>
+                    <span>Email</span>
+                    <span>Password</span>
+                    <span>Role</span>
+                  </div>
+                  {generatedCredentials.map((cred, index) => (
+                    <div key={index} className="credentials-row">
+                      <span className="user-name">{cred.name}</span>
+                      <span className="user-email">{cred.email}</span>
+                      <span className="user-password">
+                        <code>{cred.password}</code>
+                        <button 
+                          className="copy-btn"
+                          onClick={() => navigator.clipboard.writeText(cred.password)}
+                          title="Copy password"
+                        >
+                          📋
+                        </button>
+                      </span>
+                      <span className="user-role">{cred.role}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="credentials-instructions">
+                <h4>Next Steps:</h4>
+                <ol>
+                  <li>Download the credentials file for secure storage</li>
+                  <li>Distribute credentials to users through secure channels</li>
+                  <li>Instruct users to change passwords on first login</li>
+                  <li>Delete this credentials file after distribution</li>
+                </ol>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn-secondary" onClick={() => setShowCredentialsModal(false)}>
+                Close
+              </button>
+              <button className="btn-primary" onClick={downloadCredentials}>
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download Credentials
               </button>
             </div>
           </div>
